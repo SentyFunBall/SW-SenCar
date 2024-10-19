@@ -50,7 +50,6 @@ end
 
 -- try require("Folder.Filename") to include code from another file in this, so you can store code in libraries
 -- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
-require("LifeBoatAPI")
 
 _colors = {
     {{47,51,78}, {86,67,143}, {128,95,164}}, --sencar 5 in the micro
@@ -168,7 +167,7 @@ function onDraw()
             for i=1, #actions do
                 drawFullToggle(15, 15-scrollPixels+i*11, actions[i][2], actions[i][1], rcolor, tcolor)
             end
-            drawDropdown(15, 26-scrollPixels+#actions*11, open, "Theme \/", themes, cur, rcolor, tcolor)
+            drawDropdown(15, 26-scrollPixels+#actions*11, open, "Theme \\/", themes, cur, rcolor, tcolor)
         end
 
 ----------[[* CONTROLS OVERLAY *]]--
