@@ -52,15 +52,7 @@ end
 -- try require("Folder.Filename") to include code from another file in this, so you can store code in libraries
 -- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
 
-_colors = {
-    {{47,51,78}, {86,67,143}, {128,95,164}}, --sencar 5 in the micro
-    {{17, 15, 107}, {22, 121, 196}, {48, 208, 217}}, --blue
-    {{74, 27, 99}, {124, 42, 161}, {182, 29, 224}}, --purple
-            {{35, 54, 41}, {29, 87, 36}, {12, 133, 26}}, --green
-{{69, 1, 10}, {122, 0, 0}, {160, 9, 9}}, --TE red
-{{38, 38, 38}, {92, 92, 92}, {140, 140, 140}}, --grey
-{{92, 50, 1}, {158, 92, 16}, {201, 119, 24}} --orange
-}
+theme = {}
 
 app = 0
 oldapp = 0
@@ -70,11 +62,16 @@ appNames = {"Home", "Weather", "Map", "Info", "Car", "Settings", "Tow", "Camera"
 function onTick()
     acc = input.getBool(1)
     exist = input.getBool(2)
-    theme = input.getNumber(32)
     towConnected = input.getBool(3)
 
-    if theme == 0 then
-        theme = property.getNumber("Theme")
+    --input theme
+    for i = 1, 9 do
+        row = math.ceil(i/3)
+        if not theme[row] then theme[row] = {} end
+        theme[row][(i-1)%3+1] = input.getNumber(i+23)
+    end
+    if theme[1][1] == 0 then --fallback
+        theme = {{47,51,78}, {86,67,143}, {128,95,164}}
     end
 
     press = input.getBool(3)
@@ -130,26 +127,25 @@ function onTick()
 end
 
 function onDraw()
-    _ = _colors[theme]
     if acc then
         if app == 0 then
             for x = 1, 32 do
                 for y = 0, 21 do
                     c(
-                        getBilinearValue(_[1][1], _[2][1], _[1][1], _[3][1], x/32, y/21),
-                        getBilinearValue(_[1][2], _[2][2], _[1][2], _[3][2], x/32, y/21),
-                        getBilinearValue(_[1][3], _[2][3], _[1][3], _[3][3], x/32, y/21)
+                        getBilinearValue(theme[1][1], theme[2][1], theme[1][1], theme[3][1], x/32, y/21),
+                        getBilinearValue(theme[1][2], theme[2][2], theme[1][2], theme[3][2], x/32, y/21),
+                        getBilinearValue(theme[1][3], theme[2][3], theme[1][3], theme[3][3], x/32, y/21)
                     )
                     screen.drawRectF(x*3-3, y*3, 3,3)
                 end
             end
-            drawLogo()
+            drawLogo(255,"") --draw logo with full opacity and no text
             c(200,200,200)
             screen.drawTextBox(0, 55, 96, 6, carName, 0, 0)
 
             if towConnected then
                 --tow apps tray
-                c(_[1][1], _[1][2], _[1][3], 250)
+                c(theme[1][1], theme[1][2], theme[1][3], 250)
                 drawRoundedRect(84,42,10,20)
 
                 --trailer settings button
@@ -186,7 +182,7 @@ function onDraw()
         
 
         --draw dock
-        c(_[1][1], _[1][2], _[1][3], 250)
+        c(theme[1][1], theme[1][2], theme[1][3], 250)
         screen.drawRectF(0, 0, 96, 15)
 
         c(200, 200, 200)
@@ -268,7 +264,7 @@ function onDraw()
 
 
         -- info
-        screen.setColor(_[2][1], _[2][2], _[2][3])
+        screen.setColor(theme[2][1], theme[2][2], theme[2][3])
         screen.drawRectF(67,2,11,11)
         screen.drawRectF(68,1,9,1)
         screen.drawRectF(78,3,1,9)
@@ -317,23 +313,19 @@ function onDraw()
         end
 
         --cover
-        c(0,0,0,lerp(255, 1, clamp(tick, 0, 1)))
+        c(0,0,0,lerp(255, 0, clamp(tick, 0, 1)))
         screen.drawRectF(0,0,96,64)
 
     end
     if acc and tick2 >= 0 then
-        if not exist then
-            name = ""
-        else
-            name = appNames[app+1]
-        end
+        name = not exist and "" or appNames[app+1]
         drawLogo(clamp(tick2, 0, 255), name)
     end
 end
 
 function c(...) local _={...}
     for i,v in pairs(_) do
-     _[i]=_[i]^2.2/255^2.2*_[i]
+        _[i]=_[i]^2.2/255^2.2*_[i]
     end
     screen.setColor(table.unpack(_))
 end
@@ -390,26 +382,19 @@ function drawToggle(x,y,state)
 end
 
 function drawLogo(tick, text)
-    tick = tick or 255
-    text = text or ""
-    c(_[3][1],_[3][2],_[3][3],tick)
-    screen.drawRectF(27,11,41,41)
-    screen.drawRectF(28,10,39,1)
-    screen.drawRectF(26,12,1,39)
-    screen.drawRectF(28,52,39,1)
-    screen.drawRectF(68,12,1,39)
+    c(theme[3][1],theme[3][2],theme[3][3],tick)
+    drawRoundedRect(26,18,42,34)
     c(0,162,232,tick)
-    screen.drawLine(44,22,52,22)
-    screen.drawLine(52,23,57,23)
-    screen.drawLine(57,24,60,24)
-    screen.drawLine(39,23,44,23)
-    screen.drawLine(36,24,39,24)
-
-    screen.drawLine(46,27,49,24)
-    screen.drawLine(46,27,46,31)
-    screen.drawLine(46,31,50,36)
-    screen.drawLine(50,36,50,41)
-    screen.drawLine(48,42,50,40)
+    screen.drawRectF(42,21,12,3)
+    screen.drawRectF(38,24,4,17)
+    screen.drawRectF(42,41,10,3)
+    screen.drawRectF(52,35,3,6)
+    screen.drawRectF(43,32,9,3)
+    screen.drawRectF(41,34,3,3)
+    screen.drawRectF(51,34,2,3)
+    screen.drawRectF(51,39,2,3)
+    screen.drawRectF(40,40,3,2)
+    screen.drawRectF(40,22,4,4)
     c(200,200,200,tick)
     screen.drawTextBox(0,44,96,8,text, 0, 0)
 end
