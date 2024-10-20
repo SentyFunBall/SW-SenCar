@@ -37,8 +37,9 @@ do
         simulator:setInputNumber(1, screenConnection.touchX)
         simulator:setInputNumber(2, screenConnection.touchY)
 
-        simulator:setInputBool(1, simulator:getIsToggled(1))
-        simulator:setInputBool(2, simulator:getIsToggled(2))
+        simulator:setInputBool(1, true)
+        simulator:setInputBool(2, true)
+        simulator:setInputBool(3, true)
         simulator:setInputNumber(3, simulator:getSlider(1))
         simulator:setInputNumber(4, 0)
     end;
@@ -65,14 +66,16 @@ app = 0
 oldapp = 0
 tick = 0
 tick2 = 255
-appNames = {"Home", "Weather", "Map", "Info", "Car", "Settings"}
+appNames = {"Home", "Weather", "Map", "Info", "Car", "Settings", "Tow", "Camera"}
 function onTick()
     acc = input.getBool(1)
     exist = input.getBool(2)
     theme = input.getNumber(32)
-if theme == 0 then
-theme = property.getNumber("Theme")
-end
+    towConnected = input.getBool(3)
+
+    if theme == 0 then
+        theme = property.getNumber("Theme")
+    end
 
     press = input.getBool(3)
 
@@ -83,7 +86,7 @@ end
 
     carName = property.getText("Car name")
 
-    if input.getBool(32) then --
+    if input.getBool(32) then
         clock = ("%02d"):format(math.floor(clock*24)%12)..("%02d"):format(math.floor((clock*1440)%60))
         if string.sub(clock, 1, 2) == "00" then
             clock = "12"..string.sub(clock, 3,-1)
@@ -92,25 +95,20 @@ end
         clock = ("%02d"):format(math.floor(clock*24))..("%02d"):format(math.floor((clock*1440)%60))
     end
 
-    if isPointInRectangle(touchX, touchY, 10, 0, 12, 14) then
-        app = 0
+    apps = {10, 22, 36, 51, 66, 84}
+    for index, x in pairs(apps) do
+        if isPointInRectangle(x, 0, 13, 14) then
+            app = index-1
+        end
     end
-    if isPointInRectangle(touchX, touchY, 36, 0, 13, 14) then
-        app = 2 --map
+    if towConnected and app == 0 and isPointInRectangle(85, 43, 8, 8) then
+        app = 6 --tow
     end
-    if isPointInRectangle(touchX, touchY, 51, 0, 13, 14) then
-        app = 3 --info
-    end
-    if isPointInRectangle(touchX, touchY, 22, 0, 13, 14) then
-        app = 1 --weather
-    end
-    if isPointInRectangle(touchX, touchY, 66, 0, 13, 14) then
-        app = 4 --car
-    end
-    if isPointInRectangle(touchX, touchY, 84,0,13,14) then
-        app = 5 --settings
+    if towConnected and app == 0 and isPointInRectangle(85, 53, 8, 8) then
+        app = 7 --camera
     end
 
+    --delays
     if app ~= oldapp then
         tick = -1
         tick2 = 555
@@ -128,13 +126,11 @@ end
     end
 
     output.setNumber(3, app)
-    output.setNumber(1, tick)
     oldapp = app
-    output.setNumber(2, 16+app*6)
 end
 
 function onDraw()
-    local _ = _colors[theme]
+    _ = _colors[theme]
     if acc then
         if app == 0 then
             for x = 1, 32 do
@@ -150,6 +146,42 @@ function onDraw()
             drawLogo()
             c(200,200,200)
             screen.drawTextBox(0, 55, 96, 6, carName, 0, 0)
+
+            if towConnected then
+                --tow apps tray
+                c(_[1][1], _[1][2], _[1][3], 250)
+                drawRoundedRect(84,42,10,20)
+
+                --trailer settings button
+                screen.setColor(100,100,100)
+                drawRoundedRect(85,43,8,8)
+                screen.setColor(50,50,50)
+                screen.drawRectF(90,48,4,1)
+                screen.drawRectF(90,49,1,1)
+                screen.drawRectF(92,49,1,1)
+                c(100,200,100)
+                screen.drawRectF(87,44,4,3)
+                screen.drawRectF(86,45,1,1)
+                screen.setColor(0,0,0)
+                screen.drawRectF(85,49,2,1)
+                screen.drawRectF(86,50,1,1)
+                screen.drawRectF(87,50,2,1)
+                screen.setColor(200,200,200)
+                screen.drawRectF(88,49,1,1)
+                screen.drawRectF(90,45,3,1)
+                screen.drawRectF(91,44,1,1)
+                screen.drawRectF(91,46,1,1)
+                
+                --trailer camera button
+                screen.setColor(33,117,255)
+                drawRoundedRect(85,53,8,8)
+                screen.setColor(0,0,0)
+                screen.drawRectF(86,55,7,5)
+                screen.drawRectF(87,54,2,1)
+                screen.setColor(200,200,200)
+                screen.drawRectF(89,57,1,1)
+                screen.drawRectF(89,54,1,1)
+            end
         end
         
 
@@ -306,8 +338,8 @@ function c(...) local _={...}
     screen.setColor(table.unpack(_))
 end
 
-function isPointInRectangle(x, y, rectX, rectY, rectW, rectH)
-	return x > rectX and y > rectY and x < rectX+rectW and y < rectY+rectH
+function isPointInRectangle(rectX, rectY, rectW, rectH)
+	return touchX > rectX and touchY > rectY and touchX < rectX+rectW and touchY < rectY+rectH
 end
 
 function lerp(v0,v1,t)
@@ -318,17 +350,14 @@ function clamp(x, min, max)
     return math.max(math.min(x, max), min)
 end
 
-function interpolate(x,y,alpha) --simple linear interpolation
-	local difference=y-x
-	local progress=alpha*difference
-	local result=progress+x
-	return result
-end
+function lerp(v0,v1,t)
+    return v0+t*(v1-v0)
+  end
 
 function getBilinearValue(value00,value10,value01,value11,xProgress,yProgress)
-	local top=interpolate(value00,value10,xProgress) --get progress across line A
-	local bottom=interpolate(value01,value11,yProgress) --get line B progress
-	local middle=interpolate(top,bottom,yProgress) --get progress of line going
+	top=lerp(value00,value10,xProgress) --get progress across line A
+	bottom=lerp(value01,value11,yProgress) --get line B progress
+	middle=lerp(top,bottom,yProgress) --get progress of line going
 	return middle                              --between point A and point B
 end
 
@@ -363,7 +392,7 @@ end
 function drawLogo(tick, text)
     tick = tick or 255
     text = text or ""
-    screen.setColor(15,2,30,tick)
+    c(_[3][1],_[3][2],_[3][3],tick)
     screen.drawRectF(27,11,41,41)
     screen.drawRectF(28,10,39,1)
     screen.drawRectF(26,12,1,39)
