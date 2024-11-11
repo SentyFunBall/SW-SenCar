@@ -37,9 +37,9 @@ do
         simulator:setInputNumber(1, screenConnection.touchX)
         simulator:setInputNumber(2, screenConnection.touchY)
 
-        simulator:setInputBool(1, true)
-        simulator:setInputBool(2, true)
-        simulator:setInputBool(3, true)
+        simulator:setInputBool(1, not simulator:getIsToggled(1))
+        simulator:setInputBool(2, not simulator:getIsToggled(2))
+        simulator:setInputBool(3, not simulator:getIsToggled(3))
         simulator:setInputNumber(3, simulator:getSlider(1))
         simulator:setInputNumber(4, 0)
     end;
@@ -59,6 +59,7 @@ oldapp = 0
 tick = 0
 tick2 = 255
 appNames = {"Home", "Weather", "Map", "Info", "Car", "Settings", "Tow", "Camera"}
+ver = "vdev"
 function onTick()
     acc = input.getBool(1)
     exist = input.getBool(2)
@@ -303,10 +304,11 @@ function onDraw()
         c(0,0,0,lerp(255, 0, clamp(tick, 0, 1)))
         screen.drawRectF(0,0,96,64)
 
-    end
-    if acc and tick2 >= 0 then
-        name = not exist and "" or appNames[app+1]
-        drawLogo(clamp(tick2, 0, 255), name)
+        if tick2 >= 0 then
+            name = not exist and "" or appNames[app+1]
+            drawLogo(clamp(tick2, 0, 255), name)
+            screen.drawText(1, 58, ver)
+        end
     end
 end
 
