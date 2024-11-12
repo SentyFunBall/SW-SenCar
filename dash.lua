@@ -76,13 +76,12 @@ info.properties.fuelwarn = property.getNumber("Fuel Warn %")/100
 info.properties.tempwarn = property.getNumber("Temp Warn")
 --info.properties.upshift = property.getNumber("Upshift RPS")
 info.properties.downshift = property.getNumber("Downshift RPS")
-info.properties.useDriveModes = property.getBool("Use Drive Modes")
 info.properties.topspeed = property.getNumber("Top Speed (m/s)")/100
+usingSenconnect = property.getBool("Enable SenConnect") --disables map rendering, in favor of SenConnect's map
 
 function onTick()
     acc = input.getBool(1)
     exist = input.getBool(3)
-    usingSenconnect = input.getBool(2) --disables map rendering, in favor of SenConnect's map
     info.properties.unit = input.getBool(32)
     info.properties.trans = input.getBool(31) --peculiar property name
     if info.properties.theme  == 0 then
@@ -176,18 +175,16 @@ function onDraw()
         screen.drawRectF(4,29,1,1)
         screen.drawRectF(4,26,1,1)
 
-        if info.properties.useDriveModes then
-            --- drive modes
-            c(theme[2][1], theme[2][2], theme[2][3])
-            if info.drivemode == 1 then --eco
-                screen.drawText(41,2,"Eco")
-            elseif info.drivemode == 2 then --sport
-                screen.drawText(36,2,"Sport")
-            elseif info.drivemode == 3 then --tow
-                screen.drawText(41,2,"Tow")
-            elseif info.drivemode == 4 then --dac
-                screen.drawText(41,2,"DAC")
-            end
+        --- drive modes
+        c(theme[2][1], theme[2][2], theme[2][3])
+        if info.drivemode == 1 then --eco
+            screen.drawText(41,2,"Eco")
+        elseif info.drivemode == 2 then --sport
+            screen.drawText(36,2,"Sport")
+        elseif info.drivemode == 3 then --tow
+            screen.drawText(41,2,"Tow")
+        elseif info.drivemode == 4 then --dac
+            screen.drawText(41,2,"DAC")
         end
 
         --[[ battery meter (hiding this for later use in WidgetAPI)
