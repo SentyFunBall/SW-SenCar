@@ -41,26 +41,24 @@ end
 -- try require("Folder.Filename") to include code from another file in this, so you can store code in libraries
 -- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
 
-_colors = {
-    {{47,51,78}, {86,67,143}, {128,95,164}}, --sencar 5 in the micro
-    {{17, 15, 107}, {22, 121, 196}, {48, 208, 217}}, --blue
-    {{74, 27, 99}, {124, 42, 161}, {182, 29, 224}}, --purple
-            {{35, 54, 41}, {29, 87, 36}, {12, 133, 26}}, --green
-{{69, 1, 10}, {122, 0, 0}, {160, 9, 9}}, --TE red
-{{38, 38, 38}, {92, 92, 92}, {140, 140, 140}}, --grey
-{{92, 50, 1}, {158, 92, 16}, {201, 119, 24}} --orange
-}
-
+theme = {}
 ticks = 0
 tick = 0 --tick is lerp
 done = false
 function onTick()
     acc = input.getBool(1)
-    theme = input.getNumber(32)
-if theme == 0 then
-theme = property.getNumber("Theme")
-end
     car = property.getText("Car name")
+
+    --input theme
+    for i = 1, 9 do
+        row = math.ceil(i/3)
+        if not theme[row] then theme[row] = {} end
+        theme[row][(i-1)%3+1] = input.getNumber(i+23)
+    end
+    if theme[1][1] == 0 then --fallback
+        theme = {{47,51,78}, {86,67,143}, {128,95,164}}
+    end
+
     if acc then
         if ticks < 150 then
             ticks = ticks + 1
@@ -84,27 +82,26 @@ end
 end
 
 function onDraw()
-    local _ = _colors[theme]
     if acc then
     --if not done then
         alpha = lerp(255, 1, tick)
-        c(_[2][1], _[2][2], _[2][3], alpha)
+        c(theme[2][1], theme[2][2], theme[2][3], alpha)
         screen.drawRectF(0,0,96,32)
 
             if ticks > 20 then
                 screen.setColor(200,200,200, alpha)
                 screen.drawCircle(16,15,8)
-                c(_[2][1], _[2][2], _[2][3], alpha)
+                c(theme[2][1], theme[2][2], theme[2][3], alpha)
                 screen.drawRectF(4,11,32,32)
                 if ticks > 40 then
                     screen.setColor(200,200,200, alpha)
                     screen.drawCircle(16,11,3)
-                    c(_[2][1], _[2][2], _[2][3], alpha)
+                    c(theme[2][1], theme[2][2], theme[2][3], alpha)
                     screen.drawRectF(16,9,4,6)
                     if ticks > 60 then
                         screen.setColor(200,200,200, alpha)
                         screen.drawCircle(16,17,3)
-                        c(_[2][1], _[2][2], _[2][3], alpha)
+                        c(theme[2][1], theme[2][2], theme[2][3], alpha)
                         screen.drawRectF(12,15,4,6)
                         if ticks > 80 then
                             screen.setColor(200,200,200, alpha)

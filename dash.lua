@@ -66,16 +66,7 @@ end
 -- try require("Folder.Filename") to include code from another file in this, so you can store code in libraries
 -- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
 
-_colors = {
-    {{47,51,78}, {86,67,143}, {128,95,164}}, --sencar 5 in the micro
-    {{17, 15, 107}, {22, 121, 196}, {48, 208, 217}}, --blue
-    {{74, 27, 99}, {124, 42, 161}, {182, 29, 224}}, --purple
-    {{35, 54, 41}, {29, 87, 36}, {12, 133, 26}}, --green
-    {{69, 1, 10}, {122, 0, 0}, {160, 9, 9}}, --TE red
-    {{38, 38, 38}, {92, 92, 92}, {140, 140, 140}}, --grey
-    {{92, 50, 1}, {158, 92, 16}, {201, 119, 24}} --orange
-}
-
+theme = {}
 info = {properties = {}}
 fuelCollected = false
 remdeg = 130
@@ -93,7 +84,6 @@ function onTick()
     exist = input.getBool(3)
     usingSenconnect = input.getBool(2) --disables map rendering, in favor of SenConnect's map
     info.properties.unit = input.getBool(32)
-    info.properties.theme = input.getNumber(32)
     info.properties.trans = input.getBool(31) --peculiar property name
     if info.properties.theme  == 0 then
         info.properties.theme = property.getNumber("Theme")
@@ -116,38 +106,46 @@ function onTick()
     if not fuelCollected then
         ticks = ticks + 1
     end
-    if ticks == 20 then
+    if ticks <= 20 then
         info.properties.maxfuel = input.getNumber(4) or 180
         fuelCollected = true
         ticks = 0
+    end
+
+    --input theme
+    for i = 1, 9 do
+        row = math.ceil(i/3)
+        if not theme[row] then theme[row] = {} end
+        theme[row][(i-1)%3+1] = input.getNumber(i+23)
+    end
+    if theme[1][1] == 0 then --fallback
+        theme = {{47,51,78}, {86,67,143}, {128,95,164}}
     end
 end
 
 function onDraw()
     if acc then
-        local _ = _colors[info.properties.theme]
-
         if ((not usingSenconnect) and info.gear ~= 1) then --dont draw map if were in reverse or if SC is connected (haha magic boolean)
             --screenX, screenY = map.screenToMap(info.gpsX, info.gpsY, 2, 96, 32, 58, 25)
             screen.drawMap(info.gpsX, info.gpsY, 2)
             --map icon
-            c(_[3][1], _[3][2], _[3][3])
+            c(theme[3][1], theme[3][2], theme[3][3])
             drawPointer(48,16,info.compass, 5)
         end
 
         for i=0, 47 do
-            c(_[1][1], _[1][2], _[1][3], lerp(255, 50, i/47))
+            c(theme[1][1], theme[1][2], theme[1][3], lerp(255, 50, i/47))
             screen.drawLine(i, 0, i, 32)
             screen.drawLine(96-i, 0, 96-i, 32)
         end
         
         -- circles
-        c(_[1][1], _[1][2], _[1][3],250) --i love tables
+        c(theme[1][1], theme[1][2], theme[1][3],250) --i love tables
         drawCircle(16, 16, 12, 0, 21, 0, math.pi*2)
         drawCircle(80, 16, 12, 0, 21, 0, math.pi*2)
 
         -- empter dials
-        c(_[1][1]-15, _[1][2]-15, _[1][3]-15)
+        c(theme[1][1]-15, theme[1][2]-15, theme[1][3]-15)
         drawCircle(16, 16, 10, 8, 60, -remdeg/2*math.pi/180, (360-remdeg)*math.pi/180) --speed
         drawCircle(80, 16, 10, 8, 60, -remdeg/2*math.pi/180, (360-remdeg)*math.pi/180) --rps
         drawCircle(16, 16, 15, 13, 60, remdeg/5*math.pi/180, (250-remdeg)*math.pi/180) --fuel
@@ -180,17 +178,14 @@ function onDraw()
 
         if info.properties.useDriveModes then
             --- drive modes
+            c(theme[2][1], theme[2][2], theme[2][3])
             if info.drivemode == 1 then --eco
-                c(_[2][1], _[2][2], _[2][3])
                 screen.drawText(41,2,"Eco")
             elseif info.drivemode == 2 then --sport
-                c(_[2][1], _[2][2], _[2][3])
                 screen.drawText(36,2,"Sport")
             elseif info.drivemode == 3 then --tow
-                c(_[2][1], _[2][2], _[2][3])
                 screen.drawText(41,2,"Tow")
             elseif info.drivemode == 4 then --dac
-                c(_[2][1], _[2][2], _[2][3])
                 screen.drawText(41,2,"DAC")
             end
         end
@@ -208,12 +203,12 @@ function onDraw()
         dl(0,5,info.battery*9,5)]]
 
         -- dial that fills up
-        c(_[2][1], _[2][2], _[2][3])
+        c(theme[2][1], theme[2][2], theme[2][3])
         drawCircle(16, 16, 10, 8, 60, -remdeg/2*math.pi/180, math.min(info.speed/100/info.properties.topspeed, 1)*(360-remdeg)*math.pi/180) --speed
-        if info.rps>info.properties.upshift then c(180, 53, 35) else c(_[2][1], _[2][2], _[2][3]) end
+        if info.rps>info.properties.upshift then c(180, 53, 35) else c(theme[2][1], theme[2][2], theme[2][3]) end
         drawCircle(80, 16, 10, 8, 60, -remdeg/2*math.pi/180, math.min(info.rps/(info.properties.upshift+5), 1)*(360-remdeg)*math.pi/180) --rps
 
-        c(_[3][1], _[3][2], _[3][3])
+        c(theme[3][1], theme[3][2], theme[3][3])
         drawCircle(16, 16, 15, 13, 60, remdeg/5*math.pi/180, math.min(info.fuel/info.properties.maxfuel, 1)*(250-remdeg)*math.pi/180) --fuel, should clamp within fuel we got in 20th tick as max fuel
         drawCircle(80, 16, 15, 13, 60, remdeg/5*math.pi/180, math.min(info.temp/110, 1)*(250-remdeg)*math.pi/180, -1) --temp, clamps within -inf and 120
 

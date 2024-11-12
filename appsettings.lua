@@ -60,7 +60,7 @@ _colors = {
 scrollPixels = 0
 defaultTheme = property.getNumber("Theme")
 open = false
-maxscroll = 0
+maxScroll = 0
 beforeRainbow = defaultTheme --which theme it was before setting rainbow mode
 lastRainbowMode = false
 themes = {
@@ -75,25 +75,25 @@ themes = {
 actions = { --action {"name", state, type (0=toggle,1=dropdown,2=slider), isShow, extra}
     { "Metric",      false, 0 },
     { "Manual",      false, 0 },
-    { "SenConnect",  true,  0 },
     { "RGB Mode",    false, 0 },
     { "Hue adjust",  0,     2, { n = -180, m = 180, v = 0 } },
     { "Theme",       0,     1, themes},
 }
 actions[1][2] = not property.getBool("Units")
 actions[2][2] = not property.getBool("Transmission")
-actions[5][2] = defaultTheme
+actions[4][2] = defaultTheme
 theme = _colors[defaultTheme]
 
 function onTick()
-    touchX = input.getNumber(1)
-    touchY = input.getNumber(2)
-
-    press = input.getBool(3) and press + 1 or 0
+    acc = input.getBool(1)
     app = input.getNumber(3)
 
+    touchX = input.getNumber(1)
+    touchY = input.getNumber(2)
+    press = input.getBool(3) and press + 1 or 0
+
     if app == 5 then --die
-        maxScroll = open and 155 or 100 --adjust max scroll if dropdown is open
+        maxScroll = open and 143 or 89 --adjust max scroll if dropdown is open
         scrollPixels = math.min(scrollPixels, maxScroll - 64)
 
         --scroll
@@ -121,7 +121,7 @@ function onTick()
                     if open and isPointInRectangle(14, scrollable + #themes * j + j, 80, 8) then
                         theme = _colors[j]
                         beforeRainbow = j
-                        actions[5][4].v = 0
+                        actions[4][4].v = 0
                         open = false
                     end
                 end
@@ -142,7 +142,7 @@ function onTick()
     tempTheme = rgbToHsv(theme)
     hsvTheme = rgbToHsv(_colors[beforeRainbow])
 
-    if actions[4][2] then --RGB mode
+    if actions[3][2] then --RGB mode
         lastRainbowMode = true
         for _, set in pairs(tempTheme) do
             set[1] = (set[1] + 0.003) % 1
@@ -153,7 +153,7 @@ function onTick()
             tempTheme = hsvTheme
         end
         for i, set in ipairs(hsvTheme) do
-            set[1] = (set[1] + actions[5][4].v / 1800) % 1
+            set[1] = (set[1] + actions[4][4].v / 1800) % 1
             tempTheme[i] = set
         end
     end
@@ -174,7 +174,7 @@ function onTick()
 end
 
 function onDraw()
-    if app == 5 then
+    if acc and app == 5 then
         --[[* MAIN OVERLAY *]] --
         c(70, 70, 70)
         screen.drawRectF(0, 0, 96, 64)
@@ -214,14 +214,14 @@ end
 
 function c(...) 
     _ = {...} 
-    for i, v in pairs(_) do 
+    for i, v in pairs(_) do
         _[i] = v ^ 2.2 / 255 ^ 2.2 * v
-    end 
+    end
     screen.setColor(table.unpack(_))
 end
 
-function clamp(v, l, u) 
-    return math.min(math.max(v, l), u) 
+function clamp(v, l, u)
+    return math.min(math.max(v, l), u)
 end
 
 function isPointInRectangle(rx, ry, rw, rh)

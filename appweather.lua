@@ -22,8 +22,6 @@ do
     simulator:setScreen(1, "3x2")
     simulator:setProperty("Theme", 1)
     simulator:setProperty("Units", true)
-    simulator:setProperty("FONT1", "00019209B400AAAA793CA54A555690015244449415500BA0004903800009254956D4592EC54EC51C53A4F31C5354E52455545594104110490A201C7008A04504")
-    simulator:setProperty("FONT2", "FFFE57DAD75C7246D6DCF34EF3487256B7DAE92E64D4975A924EBEDAF6DAF6DED74856B2D75A711CE924B6D4B6A4B6FAB55AB524E54ED24C911264965400000E")
 
     -- Runs every tick just before onTick; allows you to simulate the inputs changing
     ---@param simulator Simulator Use simulator:<function>() to set inputs etc.
@@ -51,55 +49,48 @@ end
 -- try require("Folder.Filename") to include code from another file in this, so you can store code in libraries
 -- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
 
-_colors = {
-    {{47,51,78}, {86,67,143}, {128,95,164}}, --sencar 5 in the micro
-    {{17, 15, 107}, {22, 121, 196}, {48, 208, 217}}, --blue
-    {{74, 27, 99}, {124, 42, 161}, {182, 29, 224}}, --purple
-            {{35, 54, 41}, {29, 87, 36}, {12, 133, 26}}, --green
-{{69, 1, 10}, {122, 0, 0}, {160, 9, 9}}, --TE red
-{{38, 38, 38}, {92, 92, 92}, {140, 140, 140}}, --grey
-{{92, 50, 1}, {158, 92, 16}, {201, 119, 24}} --orange
-}
-
+theme = {}
 scrollPixels = 0
 conditions = "Sunny"
 showInfo = false
 
 function onTick()
     acc = input.getBool(1)
-    theme = input.getNumber(32)
-if theme == 0 then
-theme = property.getNumber("Theme")
-end
+    app = input.getNumber(3)
     units = input.getBool(32)
 
     touchX = input.getNumber(1)
     touchY = input.getNumber(2)
-
     press = input.getBool(3) and press + 1 or 0
-    app = input.getNumber(3)
 
     rain = input.getNumber(4)
     fog = input.getNumber(7)
     clock = input.getNumber(8)
     temp = input.getNumber(9)
 
-    if app == 1 then --eather
-        if press > 0 and isPointInRectangle(touchX, touchY, 0, 18, 12, 19) then --up
-            scrollPixels = clamp(scrollPixels-2, 0, 10000) --honestly, the max value is arbitrary
-            zoomin = true
-        else
-            zoomin = false
+    --input theme
+    for i = 1, 9 do
+        row = math.ceil(i/3)
+        if not theme[row] then theme[row] = {} end
+        theme[row][(i-1)%3+1] = input.getNumber(i+23)
+    end
+    if theme[1][1] == 0 then --fallback
+        theme = {{47,51,78}, {86,67,143}, {128,95,164}}
+    end
+
+    if app == 1 then --weather
+        maxScroll = open and 155 or 100 --adjust max scroll if dropdown is open
+        scrollPixels = math.min(scrollPixels, maxScroll - 64)
+
+        --scroll
+        scrollUp = press > 0 and isPointInRectangle(0, 18, 12, 19)
+        scrollDown = press > 0 and isPointInRectangle(0, 39, 12, 19)
+        if scrollUp then
+            scrollPixels = clamp(scrollPixels - 2, 0, 999)
         end
-        if press > 0 and isPointInRectangle(touchX, touchY, 0, 39, 12, 19) then --down
-            if 108 - scrollPixels > 64 then
-                scrollPixels = scrollPixels + 2
-            end
-            zoomout = true
-        else
-            zoomout = false
+        if scrollDown then
+            scrollPixels = scrollPixels + 2
         end
-        if press == 2 and isPointInRectangle(touchX, touchY, 14, 97 - scrollPixels, 80, 10) then showInfo = not showInfo end
 
         if rain < 0.05 then 
             rain = "None" 
@@ -115,7 +106,7 @@ end
             else
                 rain = "Moderate" 
             end
-        else 
+        else
             if temp < 5 then
                 rain = "Snow storm"
             else
@@ -178,49 +169,35 @@ end
 end
 
 function onDraw()
-    local _ = _colors[theme]
-    if acc then
-
+    if acc and app == 1 then
 ----------[[* MAIN OVERLAY *]]--
+        c(table.unpack(color))
+        screen.drawRectF(0, 0, 96, 64)
 
-        if app == 1 then
-            c(table.unpack(color))
-            screen.drawRectF(0, 0, 96, 64)
+        hcolor = {200, 200, 200}
+        rcolor = {150, 150, 150}
+        tcolor = {50, 50, 50}
 
-            hcolor = {200, 200, 200}
-            rcolor = {150, 150, 150}
-            tcolor = {50, 50, 50}
-            if not showInfo then
-                c(table.unpack(hcolor))
-                screen.drawText(15, 16-scrollPixels, "Current weather")
-                c(100,100,100)
-                screen.drawLine(15,23-scrollPixels,80,23-scrollPixels)
-                drawInfo(15, 26-scrollPixels, "Conditions", conditions, hcolor, rcolor, tcolor)
-                drawInfo(15 ,43-scrollPixels, "Temperature", temp, hcolor, rcolor, tcolor)
-                drawInfo(15, 60-scrollPixels, "Rain", rain, hcolor, rcolor, tcolor)
-                drawInfo(15, 77-scrollPixels, "fog", string.format("%.0f%%", fog*100), hcolor, rcolor, tcolor)
-            else
-                c(50,50,50)
-                screen.drawTextBox(15, 16-scrollPixels, 80, 1000, "Wind data not presented due to vehicle speeds preventing accurate data measurements. We do not want to use third-party addons, so instead we try to provide you with the best weather app.", -1, -1)
-            end
-            c(100,100,100)
-            screen.drawLine(15,94-scrollPixels,80,94-scrollPixels)
-            drawFullToggle(15, 97-scrollPixels, showInfo, "Disclaimer", rcolor, tcolor)
-        end
+        c(table.unpack(hcolor))
+        screen.drawText(15, 16-scrollPixels, "Current weather")
+        c(100,100,100)
+        screen.drawLine(15,23-scrollPixels,80,23-scrollPixels)
+        drawInfo(15, 26-scrollPixels, "Conditions", conditions, hcolor, rcolor, tcolor)
+        drawInfo(15 ,43-scrollPixels, "Temperature", temp, hcolor, rcolor, tcolor)
+        drawInfo(15, 60-scrollPixels, "Rain", rain, hcolor, rcolor, tcolor)
+        drawInfo(15, 77-scrollPixels, "fog", string.format("%.0f%%", fog*100), hcolor, rcolor, tcolor)
 
 ----------[[* CONTROLS OVERLAY *]]--
-        c(_[1][1], _[1][2], _[1][3], 250)
+        c(theme[1][1], theme[1][2], theme[1][3], 250)
         screen.drawRectF(0, 15, 13, 64)
 
-        if app == 1 then
-            if zoomin then c(150,150,150) else c(170, 170, 170)end
-            drawRoundedRect(1, 19, 10, 18)
-            if zoomout then c(150,150,150) else c(170, 170, 170)end
-            drawRoundedRect(1, 40, 10, 18)
-            c(100,100,100)
-            screen.drawTriangleF(3, 29, 6, 25, 10, 29)
-            screen.drawTriangleF(2, 48, 6, 53, 11, 48)
-        end
+        if zoomin then c(150,150,150) else c(170, 170, 170)end
+        drawRoundedRect(1, 19, 10, 18)
+        if zoomout then c(150,150,150) else c(170, 170, 170)end
+        drawRoundedRect(1, 40, 10, 18)
+        c(100,100,100)
+        screen.drawTriangleF(3, 29, 6, 25, 10, 29)
+        screen.drawTriangleF(2, 48, 6, 53, 11, 48)
     end
 end
 
@@ -231,8 +208,12 @@ function c(...) local _={...}
     screen.setColor(table.unpack(_))
 end
 
-function isPointInRectangle(x, y, rectX, rectY, rectW, rectH)
-	return x > rectX and y > rectY and x < rectX+rectW and y < rectY+rectH
+function clamp(v, l, u)
+    return math.min(math.max(v, l), u)
+end
+
+function isPointInRectangle(rectX, rectY, rectW, rectH)
+	return touchX > rectX and touchY > rectY and touchX < rectX+rectW and touchY < rectY+rectH
 end
 
 function drawInfo(x, y, header, text, hcolor, rcolor, tcolor) --function to draw some info with a header and a rounded rect
@@ -251,7 +232,6 @@ function drawRoundedRect(x, y, w, h)
     screen.drawLine(x+w, y+2, x+w, y+h-1) --right
     screen.drawLine(x+2, y+h, x+w-1, y+h) --bottom
 end
-
 
 function drawToggle(x,y,state)
     if state then
@@ -285,33 +265,3 @@ end
 function clamp(value, lower, upper)
     return math.min(math.max(value, lower), upper)
 end
-
---dst(x,y,text,size=1,rotation=1,is_monospace=false)
---rotation can be between 1 and 4
---[[f=screen.drawRectF
-g=property.getText
---magic willy font
-h=g("FONT1")..g("FONT2")
-i={}j=0
-for k in h:gmatch("....")do i[j+1]=tonumber(k,16)j=j+1 end
-function dst(l,m,n,b,o,p)b=b or 1
-o=o or 1
-if o>2 then n=n:reverse()end
-n=n:upper()for q in n:gmatch(".")do
-r=q:byte()-31 if 0<r and r<=j then
-for s=1,15 do
-if o>2 then t=2^s else t=2^(16-s)end
-if i[r]&t==t then
-u,v=((s-1)%3)*b,((s-1)//3)*b
-if o%2==1 then f(l+u,m+v,b,b)else f(l+5-v,m+u,b,b)end
-end
-end
-if i[r]&1==1 and not p then
-s=2*b
-else
-s=4*b
-end
-if o%2==1 then l=l+s else m=m+s end
-end
-end
-end]]

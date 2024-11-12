@@ -59,11 +59,19 @@ oldapp = 0
 tick = 0
 tick2 = 255
 appNames = {"Home", "Weather", "Map", "Info", "Car", "Settings", "Tow", "Camera"}
-ver = "vdev"
+ver = "v5.dev"
 function onTick()
     acc = input.getBool(1)
     exist = input.getBool(2)
-    towConnected = input.getBool(3)
+    towConnected = input.getBool(4)
+
+    press = input.getBool(3)
+    touchX = input.getNumber(1)
+    touchY = input.getNumber(2)
+
+    clock = input.getNumber(3)
+
+    carName = property.getText("Car name")
 
     --input theme
     for i = 1, 9 do
@@ -75,15 +83,7 @@ function onTick()
         theme = {{47,51,78}, {86,67,143}, {128,95,164}}
     end
 
-    press = input.getBool(3)
-
-    touchX = input.getNumber(1)
-    touchY = input.getNumber(2)
-
-    clock = input.getNumber(3)
-
-    carName = property.getText("Car name")
-
+    --clock
     if input.getBool(32) then
         clock = ("%02d"):format(math.floor(clock*24)%12)..("%02d"):format(math.floor((clock*1440)%60))
         if string.sub(clock, 1, 2) == "00" then
@@ -93,12 +93,14 @@ function onTick()
         clock = ("%02d"):format(math.floor(clock*24))..("%02d"):format(math.floor((clock*1440)%60))
     end
 
+    --app switcher
     apps = {10, 22, 36, 51, 66, 84}
     for index, x in pairs(apps) do
         if isPointInRectangle(x, 0, 13, 14) then
             app = index-1
         end
     end
+    --tow ones
     if towConnected and app == 0 and isPointInRectangle(85, 43, 8, 8) then
         app = 6 --tow
     end

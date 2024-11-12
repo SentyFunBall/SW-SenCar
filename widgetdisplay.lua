@@ -47,15 +47,7 @@ end
 -- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
 require("APIs.WidgetAPI")
 
-_colors = {
-    {{47,51,78}, {86,67,143}, {128,95,164}}, --sencar 5 in the micro
-    {{17, 15, 107}, {22, 121, 196}, {48, 208, 217}}, --blue
-    {{74, 27, 99}, {124, 42, 161}, {182, 29, 224}}, --purple
-            {{35, 54, 41}, {29, 87, 36}, {12, 133, 26}}, --green
-{{69, 1, 10}, {122, 0, 0}, {160, 9, 9}}, --TE red
-{{38, 38, 38}, {92, 92, 92}, {140, 140, 140}}, --grey
-{{92, 50, 1}, {158, 92, 16}, {201, 119, 24}} --orange
-}
+theme = {}
 
 --myWidget = {id = 0, drawn = false, {content = "Batt", x = 0, y = 0, [h = false, color = {100, 100, 100}]}, {content = 0, x = 0, y = 6, [h = false, color = {10, 10, 10}]}
 batteryWidget = {id = 0, drawn = false, 
@@ -76,15 +68,21 @@ tick = 0
 function onTick()
     acc = input.getBool(1)
     exist = input.getBool(2)
-    theme = input.getNumber(32)
-if theme == 0 then
-theme = property.getNumber("Theme")
-end
 
     units = input.getBool(32)
     battery = string.format("%.1f", input.getNumber(1)*100)
     battDelta = string.format("%.3f", input.getNumber(2)*-1000)
     rain = input.getNumber(4)
+
+    --input theme
+    for i = 1, 9 do
+        row = math.ceil(i/3)
+        if not theme[row] then theme[row] = {} end
+        theme[row][(i-1)%3+1] = input.getNumber(i+23)
+    end
+    if theme[1][1] == 0 then --fallback
+        theme = {{47,51,78}, {86,67,143}, {128,95,164}}
+    end
 
     if units then
         wind = string.format("%.0fmph", input.getNumber(3)*2.237)
@@ -111,15 +109,14 @@ end
 end
 
 function onDraw()
-    local _ = _colors[theme]
     if acc then
         for i = 1, 97 do
-            c(lerp(_[1][1], _[2][1], i/96), lerp(_[1][2], _[2][2], i/96), lerp(_[1][3], _[2][3], i/96))
+            c(lerp(theme[1][1], theme[2][1], i/96), lerp(theme[1][2], theme[2][2], i/96), lerp(theme[1][3], theme[2][3], i/96))
             screen.drawLine(i-1, 0, i-1, 32)
         end
         
-        weatherWidget = WidgetAPI.draw(1, true, weatherWidget, {_[2][1]+15, _[2][2]+15, _[2][3]+15})
-        batteryWidget = WidgetAPI.draw(3, false, batteryWidget, {_[2][1]+15, _[2][2]+15, _[2][3]+15})
+        weatherWidget = WidgetAPI.draw(1, true, weatherWidget, {theme[2][1]+15, theme[2][2]+15, theme[2][3]+15})
+        batteryWidget = WidgetAPI.draw(3, false, batteryWidget, {theme[2][1]+15, theme[2][2]+15, theme[2][3]+15})
         
         c(0,0,0,lerp(255, 1, tick))
         screen.drawRectF(0,0,96,32)
