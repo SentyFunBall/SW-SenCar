@@ -22,7 +22,7 @@ do
     simulator:setProperty("Temp Warn", 70)
     simulator:setProperty("Upshift RPS", 17) --read up more on what causes automatics to shift
     simulator:setProperty("Downshift RPS", 11)
-    simulator:setProperty("Transmission Default", true) --true for automatic
+    simulator:setProperty("Transmission", true) --true for automatic
     simulator:setProperty("Units", true) --true for imperial
     simulator:setProperty("Theme", 3) --we dont have the "Use Drive Modes" property because that is handled by the transmission
     simulator:setProperty("Car name", "SenCar 5 DEV")
@@ -82,12 +82,21 @@ fuelCollected = false
 remdeg = 130
 ticks = 0
 
+gears = {"P", "R", "N", "D"}
+
+for i = #gears, 2, -1 do
+    local j = math.random(i)
+    gears[i], gears[j] = gears[j], gears[i]
+end
+
+
 info.properties.fuelwarn = property.getNumber("Fuel Warn %")/100
 info.properties.tempwarn = property.getNumber("Temp Warn")
 --info.properties.upshift = property.getNumber("Upshift RPS")
 info.properties.downshift = property.getNumber("Downshift RPS")
 info.properties.useDriveModes = property.getBool("Use Drive Modes")
 info.properties.topspeed = property.getNumber("Top Speed (m/s)")/100
+info.properties.maxfuel = 0
 
 function onTick()
     acc = input.getBool(1)
@@ -144,8 +153,8 @@ function onDraw()
         
         -- circles
         c(_[1][1], _[1][2], _[1][3],250) --i love tables
-        drawCircle(16, 16, 12, 0, 21, 0, math.pi*2)
-        drawCircle(80, 16, 12, 0, 21, 0, math.pi*2)
+        screen.drawCircleF(16, 16, 12)
+        screen.drawCircleF(80, 16, 12)
 
         -- empter dials
         c(_[1][1]-15, _[1][2]-15, _[1][3]-15)
@@ -255,14 +264,14 @@ function onDraw()
         
         -- gear
         if info.gear == 0 then
-            dst(78,9,"P",2)
+            dst(78,9,gears[1],2)
         elseif info.gear == 1 then
-            dst(78,9,"R",2)
+            dst(78,9,gears[2],2)
         elseif info.gear == 2 then
-            dst(78,9,"N",2)
+            dst(78,9,gears[3],2)
         elseif info.gear >= 3 then
             if info.properties.trans then --auto
-                dst(77,9,"D",2)
+                dst(77,9,gears[4],2)
                 dst(84,13,string.format("%.0f", info.gear-2))
             else
                 dst(78,9,string.format("%.0f", info.gear-2),2)
