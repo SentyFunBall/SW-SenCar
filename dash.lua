@@ -88,6 +88,9 @@ for i = #gears, 2, -1 do
     gears[i], gears[j] = gears[j], gears[i]
 end
 
+passcode = math.random(1000, 9999)
+unlock = false
+passcodeAttempts = 0
 
 info.properties.fuelwarn = property.getNumber("Fuel Warn %")/100
 info.properties.tempwarn = property.getNumber("Temp Warn")
@@ -121,6 +124,19 @@ function onTick()
     info.compass = input.getNumber(8)*(math.pi*2)
     info.drivemode = input.getNumber(9)
     info.properties.upshift = property.getNumber("Upshift RPS")
+    info.passcodeAttempt = input.getNumber(10)
+
+    if info.passcodeAttempt ~= oldPasscodeAttempt then
+        if info.passcodeAttempt == passcode then
+            unlock = true
+        else
+            passcodeAttempts = passcodeAttempts + 1
+        end
+    end
+
+    if passcodeAttempts == 3 then --trigger alarm
+        output.setBool(1, true)
+    end
 
     if not fuelCollected then
         ticks = ticks + 1
@@ -130,10 +146,12 @@ function onTick()
         fuelCollected = true
         ticks = 0
     end
+
+    oldPasscodeAttempt = info.passcodeAttempt
 end
 
 function onDraw()
-    if acc then
+    if acc and unlock then
         local _ = _colors[info.properties.theme]
 
         if ((not usingSenconnect) and info.gear ~= 1) then --dont draw map if were in reverse or if SC is connected (haha magic boolean)
