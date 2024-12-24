@@ -111,7 +111,7 @@ function onDraw()
             if cruisemode == 1 then
                 c(142, 230, 0)
             elseif cruisemode == 2 then
-                c(8,154,186)
+                c(27, 161, 250)
             end
             screen.drawRectF(36,26,1,5)
             screen.drawRectF(37,25,5,1)
@@ -164,7 +164,7 @@ function onDraw()
             screen.drawLine(29, 4, 26, 5)
             screen.drawLine(29, 6, 26, 7)
         elseif lightmode == 3 then --bright
-            c(8,154,186)
+            c(27, 161, 250)
             screen.drawRectF(31, 2, 3, 5)
             screen.drawLine(34, 3, 34, 6)
 

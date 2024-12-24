@@ -77,7 +77,7 @@ oneDeg = pi/180
 
 info.properties.fuelwarn = property.getNumber("Fuel Warn %")/100
 info.properties.tempwarn = property.getNumber("Temp Warn")
---info.properties.upshift = property.getNumber("Upshift RPS")
+info.properties.upshift = property.getNumber("Upshift RPS")
 info.properties.downshift = property.getNumber("Downshift RPS")
 info.properties.topspeed = property.getNumber("Top Speed (m/s)")/100
 usingSenconnect = property.getBool("Enable SenConnect") --disables map rendering, in favor of SenConnect's map
@@ -103,7 +103,6 @@ function onTick()
     info.gpsY = input.getNumber(7)
     info.compass = input.getNumber(8)*(math.pi*2)
     info.drivemode = input.getNumber(9)
-    info.properties.upshift = property.getNumber("Upshift RPS")
 
     if not fuelCollected then
         ticks = ticks + 1
