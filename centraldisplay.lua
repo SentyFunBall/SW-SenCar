@@ -59,7 +59,7 @@ oldapp = 0
 tick = 0
 tick2 = 255
 appNames = {"Home", "Weather", "Map", "Info", "Car", "Settings", "Tow", "Camera"}
-ver = "v5.dev"
+ver = "v6.dev"
 function onTick()
     acc = input.getBool(1)
     exist = input.getBool(2)
@@ -170,7 +170,7 @@ function onDraw()
                 screen.drawRectF(90,45,3,1)
                 screen.drawRectF(91,44,1,1)
                 screen.drawRectF(91,46,1,1)
-                
+  
                 --trailer camera button
                 screen.setColor(33,117,255)
                 drawRoundedRect(85,53,8,8)
@@ -291,7 +291,7 @@ function onDraw()
         screen.drawRectF(13,8.5,5,4)
         c(200,200,200)
         screen.drawRectF(15,10.5,1,2)
-        
+
         --current app dot thing
         if app ~= 0 then
             c(250,250,250)
@@ -309,6 +309,7 @@ function onDraw()
         if tick2 >= 0 then
             name = not exist and "" or appNames[app+1]
             drawLogo(clamp(tick2, 0, 255), name)
+            c(100,100,100,220)
             screen.drawText(1, 58, ver)
         end
     end

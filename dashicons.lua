@@ -52,23 +52,22 @@ maxfuel = 180
 
 function onTick()
     fuelwarn = property.getNumber("Fuel Warn %")/100
-    batwarn = property.getNumber("Bat Warn %")/100
     tempwarn = property.getNumber("Temp Warn")
 
     leftBlinker = input.getBool(1)
     rightBlinker = input.getBool(2)
-    cruise = input.getBool(3)
-    exist = input.getBool(9)
     fl = input.getBool(4)
     fr = input.getBool(5)
     rl = input.getBool(6)
     rr = input.getBool(7)
-    lights = input.getBool(10)
-    brights = input.getBool(11)
     otherWarning = input.getBool(8)
+    exist = input.getBool(9)
+    autodrive = input.getBool(10)
+    esc = input.getBool(11)
     fuel = input.getNumber(1)
     temp = input.getNumber(2)
-    battery = input.getNumber(3)
+    lightmode = input.getNumber(3)
+    cruisemode = input.getNumber(4)
 
     --input theme
     for i = 1, 9 do
@@ -89,72 +88,105 @@ function onTick()
         ticks = 0
     end
 
-    if battery < batwarn or fuel/maxfuel < fuelwarn or temp > tempwarn or otherWarning then
+    if fuel/maxfuel < fuelwarn or temp > tempwarn or otherWarning then
         warning = true
     else
         warning = false
     end
 end
 
-function onDraw()    
+function onDraw()
     if exist then
         if leftBlinker then --oh my god, they're named the wrong way
             c(45,201,55)
-            screen.drawTriangleF(60,24,60,30,69,27)
+            screen.drawTriangleF(62,24,62,30,71,27)
         end
         
         if rightBlinker then
             c(45,201,55)
-            screen.drawTriangleF(36,24,36,30,27,27)
+            screen.drawTriangleF(34,24,34,30,25,27)
         end
         
-        if cruise then
-            c(142, 230, 0)
-            screen.drawLine(42,27,42,30)
-            screen.drawLine(39,26,42,26)
-            screen.drawLine(38,27,38,30)
-            screen.drawRectF(38,25,1,1)
-            screen.drawLine(39,27,41,29)
+        if cruisemode > 0 then
+            if cruisemode == 1 then
+                c(142, 230, 0)
+            elseif cruisemode == 2 then
+                c(8,154,186)
+            end
+            screen.drawRectF(36,26,1,5)
+            screen.drawRectF(37,25,5,1)
+            screen.drawRectF(42,26,1,5)
+            screen.drawLine(35,23,37,25)
+            screen.drawLine(37,26,40,29)
         end
 
-        --- warning symbol
+        --- check engine light
         if warning then
-            c(200,50,50)
-            screen.drawTriangle(44,29,52,29,48,22)
-            screen.drawLine(48,25,48,27)
-            screen.drawRectF(48,28,1,1)
+            c(250, 166, 20)
+            screen.drawRectF(47,23,3,1)
+            screen.drawRectF(48,24,1,1)
+            screen.drawRectF(44,26,1,3)
+            screen.drawRectF(46,25,5,1)
+            screen.drawRectF(51,26,1,3)
+            screen.drawRectF(52,25,1,5)
+            screen.drawRectF(45,27,1,1)
+            screen.drawRectF(46,26,1,3)
+            screen.drawRectF(47,28,1,1)
+            screen.drawRectF(48,29,3,1)
         end
         
-        --- battery warning
-        if battery < batwarn then
+        --- ESC warning
+        if not esc then
             c(200,50,50)
-            screen.drawRect(54,27,4,2)
-            screen.drawRectF(55,26,1,1)
-            screen.drawRectF(57,26,1,1)
+            screen.drawRectF(56,29,1,1)
+            screen.drawRectF(55,28,1,1)
+            screen.drawRectF(56,27,1,1)
+            screen.drawRectF(59,29,1,1)
+            screen.drawRectF(58,28,1,1)
+            screen.drawRectF(59,27,1,1)
+            screen.drawRect(56,24,3,2)
+            screen.drawRectF(55,25,1,1)
+            screen.drawRectF(60,25,1,1)
         end
 
-        if lights then
+        if lightmode == 1 then --daytimes
             c(96,190,112)
-            screen.drawRectF(31, 3, 3, 3)
-            screen.drawLine(31, 2, 34, 2)
+            screen.drawRectF(31, 2, 3, 5)
             screen.drawLine(34, 3, 34, 6)
-            screen.drawLine(31, 6, 34, 6)
+
+            screen.drawText(26, 2, "D")
+        elseif lightmode == 2 then --low
+            c(96,190,112)
+            screen.drawRectF(31, 2, 3, 5)
+            screen.drawLine(34, 3, 34, 6)
 
             screen.drawLine(29, 2, 26, 3)
             screen.drawLine(29, 4, 26, 5)
             screen.drawLine(29, 6, 26, 7)
+        elseif lightmode == 3 then --bright
+            c(8,154,186)
+            screen.drawRectF(31, 2, 3, 5)
+            screen.drawLine(34, 3, 34, 6)
+
+            screen.drawLine(29, 2, 26, 2)
+            screen.drawLine(29, 4, 26, 4)
+            screen.drawLine(29, 6, 26, 6)
         end
 
-        if brights then
-            c(8,154,186)
-            screen.drawRectF(65, 3, 3, 3)
-            screen.drawLine(65, 2, 68, 2)
-            screen.drawLine(68, 3, 68, 6)
-            screen.drawLine(65, 6, 68, 6)
-
-            screen.drawLine(63, 2, 60, 2)
-            screen.drawLine(63, 4, 60, 4)
-            screen.drawLine(63, 6, 60, 6)
+        if autodrive or warning then
+            c(237, 202, 24)
+            screen.drawRectF(63,2,3,1)
+            screen.drawRectF(66,3,1,3)
+            screen.drawRectF(63,6,3,1)
+            screen.drawRectF(62,3,1,3)
+            screen.drawRectF(63,4,3,1)
+            screen.drawRectF(64,5,1,1)
+            screen.drawRectF(61,1,1,1)
+            screen.drawRectF(60,2,1,5)
+            screen.drawRectF(61,7,1,1)
+            screen.drawRectF(67,7,1,1)
+            screen.drawRectF(68,2,1,5)
+            screen.drawRectF(67,1,1,1)
         end
     end
 

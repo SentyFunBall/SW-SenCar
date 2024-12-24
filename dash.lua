@@ -69,8 +69,11 @@ end
 theme = {}
 info = {properties = {}}
 fuelCollected = false
-remdeg = 130
 ticks = 0
+
+pi = math.pi
+pi2 = pi*2
+oneDeg = pi/180
 
 info.properties.fuelwarn = property.getNumber("Fuel Warn %")/100
 info.properties.tempwarn = property.getNumber("Temp Warn")
@@ -124,7 +127,7 @@ end
 
 function onDraw()
     if acc then
-        if ((not usingSenconnect) and info.gear ~= 1) then --dont draw map if were in reverse or if SC is connected (haha magic boolean)
+        if (not usingSenconnect) and info.gear ~= 1 then --dont draw map if were in reverse or if SC is connected (haha magic boolean)
             --screenX, screenY = map.screenToMap(info.gpsX, info.gpsY, 2, 96, 32, 58, 25)
             screen.drawMap(info.gpsX, info.gpsY, 2)
             --map icon
@@ -132,23 +135,32 @@ function onDraw()
             drawPointer(48,16,info.compass, 5)
         end
 
-        for i=0, 47 do
-            c(theme[1][1], theme[1][2], theme[1][3], lerp(255, 50, i/47))
-            screen.drawLine(i, 0, i, 32)
-            screen.drawLine(96-i, 0, 96-i, 32)
+        --side gradients
+        c(theme[1][1], theme[1][2], theme[1][3], 250)
+        screen.drawRectF(0, 0, 4, 32)
+        screen.drawRectF(92, 0, 4, 32)
+        for i=0, 42 do
+            c(theme[1][1], theme[1][2], theme[1][3], easeLerp(250, 50, i/42))
+            screen.drawLine(i+4, 0, i+4, 32)
+            screen.drawLine(96-i-5, 0, 96-i-5, 32)
         end
         
         -- circles
         c(theme[1][1], theme[1][2], theme[1][3],250) --i love tables
-        drawCircle(16, 16, 12, 0, 21, 0, math.pi*2)
-        drawCircle(80, 16, 12, 0, 21, 0, math.pi*2)
+        drawCircle(16, 16, 12, 0, 21, 0, pi2)
+        drawCircle(80, 16, 12, 0, 21, 0, pi2)
 
-        -- empter dials
+        -- empty dials
+        local dialStart = -130/2*oneDeg --bunch of like cool math stuff
+        local dialEnd = 230*oneDeg
+        local outStart = 130/5*oneDeg
+        local outEnd = 120*oneDeg
+
         c(theme[1][1]-15, theme[1][2]-15, theme[1][3]-15)
-        drawCircle(16, 16, 10, 8, 60, -remdeg/2*math.pi/180, (360-remdeg)*math.pi/180) --speed
-        drawCircle(80, 16, 10, 8, 60, -remdeg/2*math.pi/180, (360-remdeg)*math.pi/180) --rps
-        drawCircle(16, 16, 15, 13, 60, remdeg/5*math.pi/180, (250-remdeg)*math.pi/180) --fuel
-        drawCircle(80, 16, 15, 13, 60, remdeg/5*math.pi/180, (250-remdeg)*math.pi/180, -1) --temp
+        drawCircle(16, 16, 10, 8, 60, dialStart, dialEnd) --speed
+        drawCircle(80, 16, 10, 8, 60, dialStart, dialEnd) --rps
+        drawCircle(16, 16, 15, 13, 60, outStart, outEnd) --fuel
+        drawCircle(80, 16, 15, 13, 60, outStart, outEnd, -1) --temp
 
         -- labels (credit to mrlennyn for the ui builder (fuck off copilot i thought i uninstalled you))
         --- temp
@@ -178,73 +190,48 @@ function onDraw()
         --- drive modes
         c(theme[2][1], theme[2][2], theme[2][3])
         if info.drivemode == 1 then --eco
-            screen.drawText(41,2,"Eco")
+            dst(43,2,"Eco")
         elseif info.drivemode == 2 then --sport
-            screen.drawText(36,2,"Sport")
+            dst(39,2,"Sport")
         elseif info.drivemode == 3 then --tow
-            screen.drawText(41,2,"Tow")
+            dst(43,2,"Tow")
         elseif info.drivemode == 4 then --dac
-            screen.drawText(41,2,"DAC")
+            dst(43,2,"DAC")
         end
-
-        --[[ battery meter (hiding this for later use in WidgetAPI)
-        c(_[1][1], _[1][2], _[1][3])
-
-
-        c(_[1][1], _[1][2], _[1][3])
-        dl(1,4,1,7)
-        dl(5,4,5,6)
-        dl(9,4,9,7)
-
-        c(_[3][1], _[3][2], _[3][3])
-        dl(0,5,info.battery*9,5)]]
 
         -- dial that fills up
         c(theme[2][1], theme[2][2], theme[2][3])
-        drawCircle(16, 16, 10, 8, 60, -remdeg/2*math.pi/180, math.min(info.speed/100/info.properties.topspeed, 1)*(360-remdeg)*math.pi/180) --speed
+        drawCircle(16, 16, 10, 8, 60, dialStart, math.min(info.speed / 100 / info.properties.topspeed, 1) * 230 * oneDeg) --speed
         if info.rps>info.properties.upshift then c(180, 53, 35) else c(theme[2][1], theme[2][2], theme[2][3]) end
-        drawCircle(80, 16, 10, 8, 60, -remdeg/2*math.pi/180, math.min(info.rps/(info.properties.upshift+5), 1)*(360-remdeg)*math.pi/180) --rps
+        drawCircle(80, 16, 10, 8, 60, dialStart, math.min(info.rps / (info.properties.upshift + 5), 1) * 230 * oneDeg) --rps
 
         c(theme[3][1], theme[3][2], theme[3][3])
-        drawCircle(16, 16, 15, 13, 60, remdeg/5*math.pi/180, math.min(info.fuel/info.properties.maxfuel, 1)*(250-remdeg)*math.pi/180) --fuel, should clamp within fuel we got in 20th tick as max fuel
-        drawCircle(80, 16, 15, 13, 60, remdeg/5*math.pi/180, math.min(info.temp/110, 1)*(250-remdeg)*math.pi/180, -1) --temp, clamps within -inf and 120
+        drawCircle(16, 16, 15, 13, 60, outStart, math.min(info.fuel / info.properties.maxfuel, 1) * 120 * oneDeg) --fuel, should clamp within fuel we got in 20th tick as max fuel
+        drawCircle(80, 16, 15, 13, 60, outStart, math.min(info.temp / 110, 1) * 120 * oneDeg, -1) --temp, clamps within -inf and 120
 
         --text
         -- speed
         c(200,200,200)
+
+        local function drawSpeed(speed, unit, offset)
+            speed = string.format("%.0f", speed)
+            screen.drawText(offset, 12, speed)
+            c(150,150,150)
+            dst(11, 20, unit)
+        end
+
         if info.properties.unit then
             mph = math.floor(info.speed * 2.23)
-            if mph < 10 then
-                screen.drawText(14, 12, string.format("%.0f", mph))
-                --dst(13,9,string.format("%.0f", mph),2)
-            elseif mph < 100 then
-                screen.drawText(12, 12, string.format("%.0f",mph))
-                --dst(10,9,string.format("%.0f", mph),2)
-            else
-                screen.drawText(9, 12,string.format("%.0f", mph))
-                --dst(8,9,string.format("%.0f", mph),1.6)
-            end
-            c(150,150,150)
-            dst(11, 20, "mph")
+            offset = mph < 10 and 14 or mph < 100 and 12 or 9
+            drawSpeed(mph, "mph", offset)
         else
-            c(200,200,200)
             kph = math.floor(info.speed * 3.6)
-            if kph < 10 then
-                screen.drawText(14, 12, string.format("%.0f", kph))
-                --dst(13,9,string.format("%.0f", mph),2)
-            elseif kph < 100 then
-                screen.drawText(12, 12, string.format("%.0f",kph))
-                --dst(10,9,string.format("%.0f", mph),2)
-            else
-                screen.drawText(9, 12,string.format("%.0f", kph))
-                --dst(8,9,string.format("%.0f", mph),1.6)
-            end
-            c(150,150,150)
-            dst(11, 20, "kph")
+            offset = kph < 10 and 14 or kph < 100 and 12 or 9
+            drawSpeed(kph, "kph", offset)
         end
-        c(200,200,200)
-        
+
         -- gear
+        c(200,200,200)
         if info.gear == 0 then
             dst(78,9,"P",2)
         elseif info.gear == 1 then
@@ -262,11 +249,7 @@ function onDraw()
 
         -- units
         c(150,150,150)
-        if info.properties.trans then
-            dst(73,20,"auto")
-        else
-            dst(75,20,"man")
-        end
+        dst(73, 20, info.properties.trans and "auto" or "man")
         --dst(76, 1, "rps", 0.8)
     end
 end
@@ -310,35 +293,28 @@ end
 
 
 function drawPointer(x,y,c,s)
-    local d = 5
-    local sin, pi, cos = math.sin, math.pi, math.cos
+    d = 5
+    sin, pi, cos = math.sin, math.pi, math.cos
     screen.drawTriangleF(sin(c - pi) * s + x + 1, cos(c - pi) * s + y +1, sin(c - pi/d) * s + x +1, cos(c - pi/d) * s + y +1, sin(c + pi/d) * s + x +1, cos(c + pi/d) * s + y +1)
 end
 
---- draws an arc around pixel coords [x], [y]
----@param x number number The X coordinate of the center of the arc
----@param y number The Y coordinate of the center of the arc
----@param outer_rad number The distance from the outer edge of the arc to the center of the arc. AKA Radius
----@param inner_rad number The distance from the inner edge of the arc to the center of the arc. Set to 0 to make a circle
----@param step number The amount of triangles to draw the entire arc. Step size does not stay constant, and may vary with arc_ang
----@param begin_ang number Beginning angle of the arc in radians
----@param arc_ang number Angle of the entire arc in radians
----@param dir number Direction of the arc. Default 1, -1 for reverse.
+--- draws an arc around pixel coords [x], [y].
 function drawCircle(x,y,outer_rad, inner_rad, step, begin_ang, arc_ang, dir)
-  dir = dir or 1
-  sin=math.sin cos=math.cos pi=math.pi pi2=math.pi*2
-  step_s=pi2/step*-dir
-  ba=begin_ang*dir
-  ora=outer_rad
-  ira=inner_rad
-  for i=0, math.floor(arc_ang / (pi2 / step))-1 do
-    step_p=ba+step_s*i
-    step_n=ba+step_s*(i+1)
-    screen.drawTriangleF(x+sin(step_p)*ora, y+cos(step_p)*ora, x+sin(step_n)*ora, y+cos(step_n)*ora, x+sin(step_p)*ira, y+cos(step_p)*ira)
-    screen.drawTriangleF(x+sin(step_n)*ora, y+cos(step_n)*ora, x+sin(step_n)*ira, y+cos(step_n)*ira, x+sin(step_p)*ira, y+cos(step_p)*ira)
-  end
+    dir = dir or 1
+    sin=math.sin cos=math.cos pi=math.pi pi2=math.pi*2
+    step_s=pi2/step*-dir
+    ba=begin_ang*dir
+    ora=outer_rad
+    ira=inner_rad
+    for i=0, math.floor(arc_ang / (pi2 / step))-1 do
+        step_p=ba+step_s*i
+        step_n=ba+step_s*(i+1)
+        screen.drawTriangleF(x+sin(step_p)*ora, y+cos(step_p)*ora, x+sin(step_n)*ora, y+cos(step_n)*ora, x+sin(step_p)*ira, y+cos(step_p)*ira)
+        screen.drawTriangleF(x+sin(step_n)*ora, y+cos(step_n)*ora, x+sin(step_n)*ira, y+cos(step_n)*ira, x+sin(step_p)*ira, y+cos(step_p)*ira)
+    end
 end
 
-function lerp(v0,v1,t)
-    return v1*t+v0*(1-t)
+function easeLerp(v0, v1, t)
+    ease = t <= 0.5 and 2 * t * t or -1 + (4 - 2 * t) * t
+    return v0 + (v1 - v0) * ease
 end
