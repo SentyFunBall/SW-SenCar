@@ -57,12 +57,14 @@ _colors = {
     { { 38, 38, 38 },  { 92, 92, 92 },   { 140, 140, 140 } }, --grey
     { { 92, 50, 1 },   { 158, 92, 16 },  { 201, 119, 24 } }  --orange
 }
+
 scrollPixels = 0
 defaultTheme = property.getNumber("Theme")
 open = false
 maxScroll = 0
 beforeRainbow = defaultTheme --which theme it was before setting rainbow mode
 lastRainbowMode = false
+
 themes = {
     "Default",
     "Blue",
@@ -72,14 +74,33 @@ themes = {
     "Grey",
     "Orange"
 }
+
 actions = { --action {"name", state, type (0=toggle,1=dropdown,2=slider), isShow, extra}
     { "Metric",      false, 0 },
     { "Manual",      false, 0 },
     { "ESC Off",     false, 0 },
     { "RGB Mode",    false, 0 },
-    { "Hue adjust",  0,     2, { n = -180, m = 180, v = 0 } },
+    { "Hue adjust",  0,     2, { n = -180, m = 180, v = 0, s = 1 } },
+    { "Gradient Res",0,     2, { n = 3, m = 9, v = 3, s = 0.1} },
     { "Theme",       0,     1, themes},
 }
+actionHeightOffsets = {}
+total = 0
+for index, action in pairs(actions) do
+    local height = 0
+    if action[3] == 0 then
+        height = 11
+        total = total + height
+    elseif action[3] == 1 then
+        height = 11
+        total = total + height
+    elseif action[3] == 2 then
+        height = 19
+        total = total + height
+    end
+    actionHeightOffsets[index] = total
+end
+
 actions[1][2] = not property.getBool("Units")
 actions[2][2] = not property.getBool("Transmission")
 actions[5][2] = defaultTheme
@@ -94,7 +115,7 @@ function onTick()
     press = input.getBool(3) and press + 1 or 0
 
     if app == 5 then --die
-        maxScroll = open and 156 or 100 --adjust max scroll if dropdown is open
+        maxScroll = open and 176 or 120 --adjust max scroll if dropdown is open
         scrollPixels = math.min(scrollPixels, maxScroll - 64)
 
         --scroll
@@ -109,8 +130,8 @@ function onTick()
 
         --action inputs
         for i, action in pairs(actions) do
-            scrollable = 23 - scrollPixels + i * 11 --god damn characters
-            if action[3] == 0 and press == 2 and isPointInRectangle(14, 15 - scrollPixels + i * 11, 80, 8) then --toggle
+            scrollable = 15 - scrollPixels + actionHeightOffsets[i]
+            if action[3] == 0 and press == 2 and isPointInRectangle(14, 15 - scrollPixels + actionHeightOffsets[i], 80, 8) then --toggle
                 action[2] = not action[2]
             elseif action[3] == 1 and press == 2 then --dropdown
                 if isPointInRectangle(14, scrollable, 80, 8) then
@@ -122,18 +143,18 @@ function onTick()
                     if open and isPointInRectangle(14, scrollable + #themes * j + j, 80, 8) then
                         theme = _colors[j]
                         beforeRainbow = j
-                        actions[4][4].v = 0
+                        actions[5][4].v = 0
                         open = false
                     end
                 end
             elseif action[3] == 2 and press > 1 then --slider
                 --down
                 if isPointInRectangle( 14, scrollable, 8, 8) then
-                    action[4].v = clamp(action[4].v - 1, action[4].n, action[4].m)
+                    action[4].v = clamp(action[4].v - action[4].s, action[4].n, action[4].m)
                 end
                 --up
                 if isPointInRectangle(77, scrollable, 8, 8) then
-                    action[4].v = clamp(action[4].v + 1, action[4].n, action[4].m)
+                    action[4].v = clamp(action[4].v + action[4].s, action[4].n, action[4].m)
                 end
             end
         end
@@ -154,7 +175,7 @@ function onTick()
             tempTheme = hsvTheme
         end
         for i, set in ipairs(hsvTheme) do
-            set[1] = (set[1] + actions[5][4].v / 1800) % 1
+            set[1] = (set[1] + actions[5][4].v / 1200) % 1
             tempTheme[i] = set
         end
     end
@@ -165,6 +186,7 @@ function onTick()
     for i = 1, 4 do
         output.setBool(i, not actions[i][2])
     end
+    output.setNumber(1, math.floor(actions[6][4].v))
     channel = 24
     for i = 1, 3 do
         for j = 1, 3 do
@@ -189,13 +211,13 @@ function onDraw()
 
         --draw each action
         for i, action in pairs(actions) do
-            scrollable = 15 - scrollPixels + i * 11
+            scrollable = 15 - scrollPixels + actionHeightOffsets[i]
             if action[3] == 0 then     --toggle
                 drawFullToggle(15, scrollable, action[2], action[1], theme[3], theme[1])
             elseif action[3] == 1 then --dropdown
-                drawDropdown(15, scrollable + 8, open, action[1], action[4], theme, theme[3], theme[1])
+                drawDropdown(15, scrollable, open, action[1], action[4], theme, theme[3], theme[1])
             elseif action[3] == 2 then --slider
-                drawSlider(15, scrollable, action[1], action[4].v, action[4].n, action[4].m, theme[3], theme[1])
+                drawSlider(15, scrollable - 8, action[1], action[4].v, action[4].n, action[4].m, theme[3], theme[1])
             end
         end
 

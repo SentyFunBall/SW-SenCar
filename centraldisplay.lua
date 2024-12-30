@@ -41,7 +41,7 @@ do
         simulator:setInputBool(2, not simulator:getIsToggled(2))
         simulator:setInputBool(3, not simulator:getIsToggled(3))
         simulator:setInputNumber(3, simulator:getSlider(1))
-        simulator:setInputNumber(4, 0)
+        simulator:setInputNumber(4, math.floor(simulator:getSlider(2) * 9 + 1))
     end;
 end
 ---@endsection
@@ -58,8 +58,10 @@ app = 0
 oldapp = 0
 tick = 0
 tick2 = 255
-appNames = {"Home", "Weather", "Map", "Info", "Car", "Settings", "Tow", "Camera"}
+gradientResolution = 1
+appNames = {"Home", "Weather", "Map", "Info", "Car", "Settings", "SiBTaT+", "Camera"}
 ver = "v6.dev"
+
 function onTick()
     acc = input.getBool(1)
     exist = input.getBool(2)
@@ -70,6 +72,7 @@ function onTick()
     touchY = input.getNumber(2)
 
     clock = input.getNumber(3)
+    gradientResolution = input.getNumber(4)
 
     carName = property.getText("Car name")
 
@@ -100,6 +103,7 @@ function onTick()
             app = index-1
         end
     end
+
     --tow ones
     if towConnected and app == 0 and isPointInRectangle(85, 43, 8, 8) then
         app = 6 --tow
@@ -132,16 +136,20 @@ end
 function onDraw()
     if acc then
         if app == 0 then
-            for x = 1, 32 do
-                for y = 0, 21 do
+            xLim = 96/gradientResolution+1
+            yLim = 64/gradientResolution+1
+            for x = 1, xLim do
+                for y = 0, yLim do
                     c(
-                        getBilinearValue(theme[1][1], theme[2][1], theme[1][1], theme[3][1], x/32, y/21),
-                        getBilinearValue(theme[1][2], theme[2][2], theme[1][2], theme[3][2], x/32, y/21),
-                        getBilinearValue(theme[1][3], theme[2][3], theme[1][3], theme[3][3], x/32, y/21)
+                        getBilinearValue(theme[1][1], theme[2][1], theme[1][1], theme[3][1], x/xLim, y/yLim),
+                        getBilinearValue(theme[1][2], theme[2][2], theme[1][2], theme[3][2], x/xLim, y/yLim),
+                        getBilinearValue(theme[1][3], theme[2][3], theme[1][3], theme[3][3], x/xLim, y/yLim)
                     )
-                    screen.drawRectF(x*3-3, y*3, 3,3)
+                    
+                    screen.drawRectF(x*gradientResolution-gradientResolution, y*gradientResolution, gradientResolution,gradientResolution)
                 end
             end
+
             drawLogo(255,"") --draw logo with full opacity and no text
             c(200,200,200)
             screen.drawTextBox(0, 55, 96, 6, carName, 0, 0)
