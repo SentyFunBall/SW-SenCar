@@ -94,10 +94,10 @@ passcodeAttempts = 0
 
 info.properties.fuelwarn = property.getNumber("Fuel Warn %")/100
 info.properties.tempwarn = property.getNumber("Temp Warn")
---info.properties.upshift = property.getNumber("Upshift RPS")
 info.properties.downshift = property.getNumber("Downshift RPS")
 info.properties.useDriveModes = property.getBool("Use Drive Modes")
 info.properties.topspeed = property.getNumber("Top Speed (m/s)")/100
+info.properties.governor = property.getNumber("Governor Speed (m/s)")/100
 info.properties.maxfuel = 0
 
 function onTick()
@@ -146,6 +146,20 @@ function onTick()
         fuelCollected = true
         ticks = 0
     end
+
+    --other warnings
+    if info.fuel/info.properties.maxfuel < info.properties.fuelwarn then
+        output.setBool(2, true)
+    end
+
+    if info.temp > info.properties.tempwarn then
+        output.setBool(3, true)
+    end
+
+    if info.speed > info.properties.governor then
+        output.setBool(4, true)
+    end
+
 
     oldPasscodeAttempt = info.passcodeAttempt
 end
@@ -235,7 +249,7 @@ function onDraw()
         dl(0,5,info.battery*9,5)]]
 
         -- dial that fills up
-        c(_[2][1], _[2][2], _[2][3])
+        if info.speed>info.properties.governor then c(180, 53, 35) else c(_[2][1], _[2][2], _[2][3]) end
         drawCircle(16, 16, 10, 8, 60, -remdeg/2*math.pi/180, math.min(info.speed/100/info.properties.topspeed, 1)*(360-remdeg)*math.pi/180) --speed
         if info.rps>info.properties.upshift then c(180, 53, 35) else c(_[2][1], _[2][2], _[2][3]) end
         drawCircle(80, 16, 10, 8, 60, -remdeg/2*math.pi/180, math.min(info.rps/(info.properties.upshift+5), 1)*(360-remdeg)*math.pi/180) --rps

@@ -22,7 +22,7 @@ do
     simulator:setScreen(1, "3x2")
     simulator:setProperty("Theme", 1)
     simulator:setProperty("Units", true)
-    simulator:setProperty("Car name", "Echolodia TE")
+    simulator:setProperty("Car name", "Echolodia 2029")
     simulator:setProperty("FONT1", "00019209B400AAAA793CA54A555690015244449415500BA0004903800009254956D4592EC54EC51C53A4F31C5354E52455545594104110490A201C7008A04504")
     simulator:setProperty("FONT2", "FFFE57DAD75C7246D6DCF34EF3487256B7DAE92E64D4975A924EBEDAF6DAF6DED74856B2D75A711CE924B6D4B6A4B6FAB55AB524E54ED24C911264965400000E")
 
@@ -130,7 +130,7 @@ end
 function onDraw()
     if acc then
         if app == 0 then
-            for x = 1, 32 do
+            --[[for x = 1, 32 do
                 for y = 0, 21 do
                     c(
                         getBilinearValue(theme[1][1], theme[2][1], theme[1][1], theme[3][1], x/32, y/21),
@@ -139,7 +139,11 @@ function onDraw()
                     )
                     screen.drawRectF(x*3-3, y*3, 3,3)
                 end
-            end
+            end]]
+            c(theme[1][1], theme[1][2], theme[1][3])
+            screen.drawRectF(0, 0, 96, 64)
+
+            
             drawLogo(255,"") --draw logo with full opacity and no text
             c(200,200,200)
             screen.drawTextBox(0, 55, 96, 6, carName, 0, 0)
