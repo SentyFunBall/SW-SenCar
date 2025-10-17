@@ -16,6 +16,7 @@
 - Replaced SenConnect composite input with property toggle
 - Changed how lights work - Now a cycle keybind is present to cycle through Off, Low Beams, and High Beams
 - Cruise Control cycle keyind now present to cycle through Off, Cruise Control, and Adaptive Cruise Control (ACC only appears if Mercury Radar Driver is installed and connected to SenCar 6 Extras MC)
+- Fixed issue with desynced touch inputs causing touch to appear at last location for a tick or two
 
 ## Lua
 ### New
