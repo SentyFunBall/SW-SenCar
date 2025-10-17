@@ -71,6 +71,8 @@ function onTick()
     touchY = input.getNumber(2)
     press = input.getBool(3) and press + 1 or 0
 
+    lock = input.getBool(4)
+
     --input theme
     for i = 1, 9 do
         row = math.ceil(i/3)
@@ -96,7 +98,7 @@ function onTick()
 
         --PROCESSING
         for i = 1, #actions do
-            if press == 2 and isPointInRectangle(15, 15-scrollPixels+i*11, 80, 8) then
+            if not lock and press == 2 and isPointInRectangle(15, 15-scrollPixels+i*11, 80, 8) then
                 actions[i][2] = not actions[i][2]
             end
             output.setBool(i+3, actions[i][2])

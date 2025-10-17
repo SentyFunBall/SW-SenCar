@@ -81,7 +81,7 @@ actions = { --action {"name", state, type (0=toggle,1=dropdown,2=slider), isShow
     { "ESC Off",     false, 0 },
     { "RGB Mode",    false, 0 },
     { "Hue adjust",  0,     2, { n = -180, m = 180, v = 0, s = 1 } },
-    { "Gradient Res",0,     2, { n = 3, m = 9, v = 3, s = 0.1} },
+    { "Gradient Res",0,     2, { n = 1, m = 9, v = 3, s = 0.1} },
     { "Theme",       0,     1, themes},
 }
 actionHeightOffsets = {}
@@ -114,6 +114,8 @@ function onTick()
     touchY = input.getNumber(2)
     press = input.getBool(3) and press + 1 or 0
 
+    lock = input.getBool(4)
+
     if app == 5 then --die
         maxScroll = open and 176 or 120 --adjust max scroll if dropdown is open
         scrollPixels = math.min(scrollPixels, maxScroll - 64)
@@ -130,31 +132,33 @@ function onTick()
 
         --action inputs
         for i, action in pairs(actions) do
-            scrollable = 15 - scrollPixels + actionHeightOffsets[i]
-            if action[3] == 0 and press == 2 and isPointInRectangle(14, 15 - scrollPixels + actionHeightOffsets[i], 80, 8) then --toggle
-                action[2] = not action[2]
-            elseif action[3] == 1 and press == 2 then --dropdown
-                if isPointInRectangle(14, scrollable, 80, 8) then
-                    open = not open
-                end
-
-                --select themes
-                for j = 1, #themes do
-                    if open and isPointInRectangle(14, scrollable + #themes * j + j, 80, 8) then
-                        theme = _colors[j]
-                        beforeRainbow = j
-                        actions[5][4].v = 0
-                        open = false
+            if not lock then
+                scrollable = 15 - scrollPixels + actionHeightOffsets[i]
+                if action[3] == 0 and press == 2 and isPointInRectangle(14, 15 - scrollPixels + actionHeightOffsets[i], 80, 8) then --toggle
+                    action[2] = not action[2]
+                elseif action[3] == 1 and press == 2 then --dropdown
+                    if isPointInRectangle(14, scrollable, 80, 8) then
+                        open = not open
                     end
-                end
-            elseif action[3] == 2 and press > 1 then --slider
-                --down
-                if isPointInRectangle( 14, scrollable, 8, 8) then
-                    action[4].v = clamp(action[4].v - action[4].s, action[4].n, action[4].m)
-                end
-                --up
-                if isPointInRectangle(77, scrollable, 8, 8) then
-                    action[4].v = clamp(action[4].v + action[4].s, action[4].n, action[4].m)
+
+                    --select themes
+                    for j = 1, #themes do
+                        if open and isPointInRectangle(14, scrollable + #themes * j + j, 80, 8) then
+                            theme = _colors[j]
+                            beforeRainbow = j
+                            actions[5][4].v = 0
+                            open = false
+                        end
+                    end
+                elseif action[3] == 2 and press > 1 then --slider
+                    --down
+                    if isPointInRectangle( 14, scrollable, 8, 8) then
+                        action[4].v = clamp(action[4].v - action[4].s, action[4].n, action[4].m)
+                    end
+                    --up
+                    if isPointInRectangle(77, scrollable, 8, 8) then
+                        action[4].v = clamp(action[4].v + action[4].s, action[4].n, action[4].m)
+                    end
                 end
             end
         end

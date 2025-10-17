@@ -72,7 +72,7 @@ function onTick()
     touchY = input.getNumber(2)
 
     clock = input.getNumber(3)
-    gradientResolution = input.getNumber(4)
+    gradientResolution = clamp(input.getNumber(4), 1, 9)
 
     carName = property.getText("Car name")
 

@@ -84,9 +84,9 @@ function onTick()
     end
 
     if Unit then --mpg
-        fuelEcon = (fuelUsed / 3.785) / (distance / 1609.34) --miles / gallon
+        fuelEcon =  (distance / 1609.34) / (fuelUsed / 3.785)--miles / gallon
     else --l/100km
-        fuelEcon = (fuelUsed*100)/distance/1000 --idk blame nameous
+        fuelEcon = distance/1000 / (fuelUsed*100) --idk blame nameous
     end
 
     if fuelEcon ~= fuelEcon then fuelEcon = 0 end
