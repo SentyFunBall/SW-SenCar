@@ -149,13 +149,7 @@ function onDraw()
             screen.drawRectF(60,25,1,1)
         end
 
-        if lightmode == 1 then --daytimes
-            c(96,190,112)
-            screen.drawRectF(31, 2, 3, 5)
-            screen.drawLine(34, 3, 34, 6)
-
-            screen.drawText(26, 2, "D")
-        elseif lightmode == 2 then --low
+        if lightmode == 1 then --low
             c(96,190,112)
             screen.drawRectF(31, 2, 3, 5)
             screen.drawLine(34, 3, 34, 6)
@@ -163,7 +157,7 @@ function onDraw()
             screen.drawLine(29, 2, 26, 3)
             screen.drawLine(29, 4, 26, 5)
             screen.drawLine(29, 6, 26, 7)
-        elseif lightmode == 3 then --bright
+        elseif lightmode == 2 then --bright
             c(27, 161, 250)
             screen.drawRectF(31, 2, 3, 5)
             screen.drawLine(34, 3, 34, 6)
@@ -173,7 +167,7 @@ function onDraw()
             screen.drawLine(29, 6, 26, 6)
         end
 
-        if autodrive or warning then
+        if autodrive then
             c(237, 202, 24)
             screen.drawRectF(63,2,3,1)
             screen.drawRectF(66,3,1,3)
