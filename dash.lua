@@ -27,6 +27,7 @@ do
     simulator:setProperty("Theme", 3) --we dont have the "Use Drive Modes" property because that is handled by the transmission
     simulator:setProperty("Car name", "SenCar 5 DEV")
     simulator:setProperty("Top Speed (m/s)", 66)
+    simulator:setProperty("EV Mode (Do not change)", true)
 
     -- Runs every tick just before onTick; allows you to simulate the inputs changing
     ---@param simulator Simulator Use simulator:<function>() to set inputs etc.
@@ -42,8 +43,9 @@ do
         simulator:setInputNumber(4, screenConnection.touchY)]]
 
         -- NEW! button/slider options from the UI
-        simulator:setInputBool(1, true)
+        simulator:setInputBool(1, false)
         simulator:setInputBool(2, false)
+        simulator:setInputBool(32, false)
 
         local screenConnection = simulator:getTouchScreen(1)
         simulator:setInputNumber(1, simulator:getSlider(1)*100)
@@ -53,9 +55,8 @@ do
         simulator:setInputNumber(5, simulator:getSlider(5)*200)
         simulator:setInputNumber(8, simulator:getSlider(8))
         simulator:setInputNumber(9, simulator:getSlider(9))
-        simulator:setInputNumber(10, 2)
-        simulator:setInputNumber(31, screenConnection.touchX)
-        simulator:setInputNumber(32, screenConnection.touchY)
+        simulator:setInputNumber(10, screenConnection.touchX)
+        simulator:setInputNumber(11, screenConnection.touchY)
     end;
 end
 ---@endsection
@@ -70,6 +71,7 @@ theme = {}
 info = {properties = {}}
 fuelCollected = false
 ticks = 0
+mapZoom = 2
 
 pi = math.pi
 pi2 = pi*2
@@ -80,6 +82,7 @@ info.properties.tempwarn = property.getNumber("Temp Warn")
 info.properties.upshift = property.getNumber("Upshift RPS")
 info.properties.downshift = property.getNumber("Downshift RPS")
 info.properties.topspeed = property.getNumber("Top Speed (m/s)")/100
+info.properties.ev = property.getBool("EV Mode (Do not change)")
 usingSenconnect = property.getBool("Enable SenConnect") --disables map rendering, in favor of SenConnect's map
 
 function onTick()
@@ -104,6 +107,20 @@ function onTick()
     info.compass = input.getNumber(8)*(math.pi*2)
     info.drivemode = input.getNumber(9)
 
+    touchX = input.getNumber(10)
+    touchY = input.getNumber(11)
+    touch = input.getBool(2)
+
+    clock = input.getNumber(13)
+    if input.getBool(32) then
+        clock = ("%02d"):format(math.floor(clock*24)%12)..":"..("%02d"):format(math.floor((clock*1440)%60))
+        if string.sub(clock, 1, 2) == "00" then
+            clock = "12"..string.sub(clock, 3,-1)
+        end
+    else
+        clock = ("%02d"):format(math.floor(clock*24))..":"..("%02d"):format(math.floor((clock*1440)%60))
+    end
+
     if not fuelCollected then
         ticks = ticks + 1
     end
@@ -112,6 +129,15 @@ function onTick()
         fuelCollected = true
         ticks = 0
     end
+
+    --map zoom
+    if touch and isPointInRectangle(23, 26, 5, 5) then
+        mapZoom = math.min(mapZoom + 0.1, 5)
+    elseif touch and isPointInRectangle(67, 26, 5, 5) then
+        mapZoom = math.max(mapZoom - 0.1, 0.5)
+    end
+
+    mapZoom = mapZoom + (info.speed / info.properties.topspeed) * 0.1
 
     --input theme
     for i = 1, 9 do
@@ -126,12 +152,19 @@ end
 
 function onDraw()
     if acc then
-        if (not usingSenconnect) and info.gear ~= 1 then --dont draw map if were in reverse or if SC is connected (haha magic boolean)
+        if (not usingSenconnect) and info.gear ~= 1 then
+            --dont draw map or zoom btns if we're in reverse or if SC is connected (haha magic boolean)
             --screenX, screenY = map.screenToMap(info.gpsX, info.gpsY, 2, 96, 32, 58, 25)
-            screen.drawMap(info.gpsX, info.gpsY, 2)
+            screen.drawMap(info.gpsX, info.gpsY, mapZoom)
             --map icon
             c(theme[3][1], theme[3][2], theme[3][3])
             drawPointer(48,16,info.compass, 5)
+
+            --map zoom buttons
+            c(50, 50, 50)
+            screen.drawRectF(24, 28, 3, 1) --minus
+            screen.drawRectF(69, 27, 1, 3) --plus
+            screen.drawRectF(68, 28, 3, 1)
         end
 
         --side gradients
@@ -247,9 +280,20 @@ function onDraw()
         end
 
         -- units
-        c(150,150,150)
-        dst(73, 20, info.properties.trans and "auto" or "man")
+        c(150, 150, 150)
+        if info.properties.ev then
+        else
+            dst(info.properties.trans and 73 or 74, 20, info.properties.trans and "auto" or "man")
+        end
         --dst(76, 1, "rps", 0.8)
+    else
+        c(100, 100, 100)
+        dst(40, 10, clock)
+        c(80, 80, 80)
+        if info.properties.ev then
+            dst(28, 20, "Tap to start")
+        end
+        dst(2, 2, "ST")
     end
 end
 
@@ -295,6 +339,15 @@ function drawPointer(x,y,c,s)
     d = 5
     sin, pi, cos = math.sin, math.pi, math.cos
     screen.drawTriangleF(sin(c - pi) * s + x + 1, cos(c - pi) * s + y +1, sin(c - pi/d) * s + x +1, cos(c - pi/d) * s + y +1, sin(c + pi/d) * s + x +1, cos(c + pi/d) * s + y +1)
+end
+
+function isPointInRectangle(rectX, rectY, rectW, rectH)
+	return touchX > rectX and touchY > rectY and touchX < rectX+rectW and touchY < rectY+rectH
+end
+
+function gpsSpeed(x,y,lX,lY) -- function by GOM
+    s=(((x-lX)^2+(y-lY)^2)^0.5)
+    return s,x,y
 end
 
 --- draws an arc around pixel coords [x], [y].
