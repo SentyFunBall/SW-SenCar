@@ -28,7 +28,7 @@ function onTick()
 	if isEV then
 		if not seatOccupied then
 			ticks = ticks + 1
-			if ticks > 3600 then -- turn off after 1 minute
+			if ticks > 1800 then -- turn off after 30 seconds
 				s = false
 			end
 		else
