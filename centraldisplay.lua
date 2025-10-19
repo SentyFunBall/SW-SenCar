@@ -65,7 +65,7 @@ ver = "v6.dev"
 function onTick()
     acc = input.getBool(1)
     exist = input.getBool(2)
-    towConnected = input.getBool(4)
+    towConnected = input.getBool(4) -- note that MC has NOT from the connection
 
     press = input.getBool(3)
     touchX = input.getNumber(1)
