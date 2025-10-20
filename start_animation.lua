@@ -41,10 +41,10 @@ end
 -- try require("Folder.Filename") to include code from another file in this, so you can store code in libraries
 -- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
 
-theme = {}
-ticks = 0
-tick = 0 --tick is lerp
-done = false
+local theme = {}
+local ticks = 0
+local tick = 0 --tick is lerp
+local done = false
 function onTick()
     acc = input.getBool(1)
     car = property.getText("Car name")

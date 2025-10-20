@@ -52,15 +52,20 @@ end
 -- try require("Folder.Filename") to include code from another file in this, so you can store code in libraries
 -- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
 
-theme = {}
+local theme = { { 47, 51, 78 }, { 86, 67, 143 }, { 128, 95, 164 } }
 
-app = 0
-oldapp = 0
-tick = 0
-tick2 = 255
-gradientResolution = 1
-appNames = {"Home", "Weather", "Map", "Info", "Car", "Settings", "SiBTaT+", "Camera"}
-ver = "v6.dev"
+local app = 0
+local oldapp = 0
+local tick = 0
+local tick2 = 255
+local gradientResolution = 5
+local gradientStep = 0
+local appNames = {"Home", "Weather", "Map", "Info", "Car", "Settings", "SiBTaT+", "Camera"}
+local ver = "v6.dev"
+local lastClock = 0
+local clockStr = ""
+
+local xLim, yLim = 0, 0
 
 function onTick()
     acc = input.getBool(1)
@@ -75,25 +80,29 @@ function onTick()
     gradientResolution = clamp(input.getNumber(4), 1, 9)
 
     carName = property.getText("Car name")
-
-    --input theme
+    
+    -- load theme from inputs
     for i = 1, 9 do
-        row = math.ceil(i/3)
-        if not theme[row] then theme[row] = {} end
-        theme[row][(i-1)%3+1] = input.getNumber(i+23)
-    end
-    if theme[1][1] == 0 then --fallback
-        theme = {{47,51,78}, {86,67,143}, {128,95,164}}
+        local row = math.ceil(i/3)
+        local col = (i-1)%3+1
+        local value = input.getNumber(i+23)
+        if value ~= 0 then
+            if not theme[row] then theme[row] = {} end
+            theme[row][col] = value
+        end
     end
 
     --clock
-    if input.getBool(32) then
-        clock = ("%02d"):format(math.floor(clock*24)%12)..("%02d"):format(math.floor((clock*1440)%60))
-        if string.sub(clock, 1, 2) == "00" then
-            clock = "12"..string.sub(clock, 3,-1)
+    if clock ~= lastClock then
+        lastClock = clock
+        if input.getBool(32) then
+            clockStr = ("%02d"):format(math.floor(clock*24)%12)..("%02d"):format(math.floor((clock*1440)%60))
+            if string.sub(clockStr, 1, 2) == "00" then
+                clockStr = "12"..string.sub(clockStr, 3,-1)
+            end
+        else
+            clockStr = ("%02d"):format(math.floor(clock*24))..("%02d"):format(math.floor((clock*1440)%60))
         end
-    else
-        clock = ("%02d"):format(math.floor(clock*24))..("%02d"):format(math.floor((clock*1440)%60))
     end
 
     --app switcher
@@ -129,197 +138,205 @@ function onTick()
         tick2 = tick2 + 12.75
     end
 
+    -- gradient caching
+    if gradientResolution ~= gradientStep then
+        gradientStep = gradientResolution
+        xLim = 96 / gradientResolution + 1
+        yLim = 64/gradientResolution+1
+    end
+
     output.setNumber(3, app)
     oldapp = app
 end
 
 function onDraw()
-    if acc then
-        if app == 0 then
-            xLim = 96/gradientResolution+1
-            yLim = 64/gradientResolution+1
-            for x = 1, xLim do
-                for y = 0, yLim do
-                    c(
-                        getBilinearValue(theme[1][1], theme[2][1], theme[1][1], theme[3][1], x/xLim, y/yLim),
-                        getBilinearValue(theme[1][2], theme[2][2], theme[1][2], theme[3][2], x/xLim, y/yLim),
-                        getBilinearValue(theme[1][3], theme[2][3], theme[1][3], theme[3][3], x/xLim, y/yLim)
-                    )
-                    
-                    screen.drawRectF(x*gradientResolution-gradientResolution, y*gradientResolution, gradientResolution,gradientResolution)
-                end
-            end
+    if not acc then return end
 
-            drawLogo(255,"") --draw logo with full opacity and no text
-            c(200,200,200)
-            screen.drawTextBox(0, 55, 96, 6, carName, 0, 0)
+    -- draw background gradient
+    -- this is the most expensive fucking thing in the entire OS
+    if app == 0 then
+        for x = 1, xLim do
+            for y = 0, yLim do
+                local xRatio, yRatio = x/xLim, y/yLim
+                c(
+                    getBilinearValue(theme[1][1], theme[2][1], theme[1][1], theme[3][1], xRatio, yRatio),
+                    getBilinearValue(theme[1][2], theme[2][2], theme[1][2], theme[3][2], xRatio, yRatio),
+                    getBilinearValue(theme[1][3], theme[2][3], theme[1][3], theme[3][3], xRatio, yRatio)
+                )
 
-            if towConnected then
-                --tow apps tray
-                c(theme[1][1], theme[1][2], theme[1][3], 250)
-                drawRoundedRect(84,42,10,20)
-
-                --trailer settings button
-                screen.setColor(100,100,100)
-                drawRoundedRect(85,43,8,8)
-                screen.setColor(50,50,50)
-                screen.drawRectF(90,48,4,1)
-                screen.drawRectF(90,49,1,1)
-                screen.drawRectF(92,49,1,1)
-                c(100,200,100)
-                screen.drawRectF(87,44,4,3)
-                screen.drawRectF(86,45,1,1)
-                screen.setColor(0,0,0)
-                screen.drawRectF(85,49,2,1)
-                screen.drawRectF(86,50,1,1)
-                screen.drawRectF(87,50,2,1)
-                screen.setColor(200,200,200)
-                screen.drawRectF(88,49,1,1)
-                screen.drawRectF(90,45,3,1)
-                screen.drawRectF(91,44,1,1)
-                screen.drawRectF(91,46,1,1)
-  
-                --trailer camera button
-                screen.setColor(33,117,255)
-                drawRoundedRect(85,53,8,8)
-                screen.setColor(0,0,0)
-                screen.drawRectF(86,55,7,5)
-                screen.drawRectF(87,54,2,1)
-                screen.setColor(200,200,200)
-                screen.drawRectF(89,57,1,1)
-                screen.drawRectF(89,54,1,1)
+                screen.drawRectF(x*gradientStep-gradientStep, y*gradientStep, gradientStep,gradientStep)
             end
         end
-        
 
-        --draw dock
-        c(theme[1][1], theme[1][2], theme[1][3], 250)
-        screen.drawRectF(0, 0, 96, 15)
-
-        c(200, 200, 200)
-        screen.drawTextBox(1, 1, 12, 30, clock, -1, -1)
-
-        --apps
-        -- weather app
-        screen.setColor(33,117,255)
-        drawRoundedRect(22,1,11,12)
-        screen.setColor(226,168,16)
-        screen.drawRectF(24,2,2,4)
-        screen.drawRectF(23,3,4,2)
-        screen.setColor(255,255,255)
-        screen.drawRectF(26,7,6,3)
-        screen.drawRectF(27,6,5,1)
-        screen.drawRectF(28,5,3,1)
-        screen.drawRectF(32,7,1,3)
-        screen.drawRectF(25,8,1,2)
-
-        -- maps
-        screen.setColor(255,255,255)
-        screen.drawRectF(43,1,1,4)
-        screen.drawRectF(44,5,5,1)
-        screen.drawRectF(44,11,5,1)
-        screen.drawRectF(43,12,1,2)
-        screen.setColor(195,181,150)
-        screen.drawRectF(36,6,7,6)
-        screen.drawRectF(38,12,5,2)
-        screen.drawRectF(37,12,1,1)
-        screen.drawRectF(44,12,4,1)
-        screen.drawRectF(44,13,3,1)
-        screen.drawRectF(44,6,5,5)
-        screen.setColor(40,139,20)
-        screen.drawRectF(37,2,6,3)
-        screen.drawRectF(44,2,4,3)
-        screen.drawRectF(48,3,1,2)
-        screen.drawRectF(44,1,3,1)
-        screen.drawRectF(38,1,5,1)
-        screen.drawRectF(36,3,1,2)
-        screen.setColor(3,124,239)
-        screen.drawRectF(36,5,8,1)
-        screen.drawRectF(43,6,1,5)
-        screen.setColor(3,55,239)
-        screen.drawRectF(43,11,1,1)
-        screen.setColor(250,183,15)
-        screen.drawLine(36,7,42,12)
-        screen.drawLine(44,13,45,13)
-
-        -- info
-        screen.setColor(14,2,26)
-        drawRoundedRect(51,1,12,12)
-        screen.setColor(21,19,103)
-        screen.drawRectF(56,3,3,2)
-        screen.drawRectF(56,6,3,6)
-        screen.setColor(0,0,0)
-        screen.drawRectF(54,3,2,1)
-        screen.drawRectF(52,4,2,1)
-        screen.drawRectF(51,5,1,1)
-        screen.drawRectF(56,12,2,1)
-        screen.drawRectF(54,13,2,1)
-        screen.drawRectF(54,6,2,1)
-        screen.drawRectF(52,7,2,1)
-        screen.drawRectF(54,4,2,1)
-        screen.drawRectF(51,8,1,1)
-        screen.drawRectF(52,5,2,1)
-        screen.drawRectF(51,6,1,1)
-        screen.drawRectF(54,7,2,6)
-        screen.drawRectF(52,8,2,5)
-        screen.drawRectF(53,13,1,1)
-        screen.drawRectF(51,9,1,3)
-
-        -- car options
-        screen.setColor(theme[2][1], theme[2][2], theme[2][3])
-        drawRoundedRect(66,1,12,12)
-        screen.setColor(0,0,0)
-        screen.drawRectF(70,2,5,3)
-        screen.drawRectF(70,5,1,7)
-        screen.drawRectF(74,5,1,7)
-        screen.drawRectF(71,7,3,2)
-        screen.drawRectF(71,10,3,2)
-        screen.drawRectF(69,5,1,1)
-        screen.drawRectF(68,6,1,1)
-        screen.drawRectF(75,5,1,1)
-        screen.drawRectF(76,6,1,1)
-        screen.drawRectF(75,8,1,1)
-        screen.drawRectF(76,9,1,1)
-        screen.drawRectF(69,8,1,1)
-        screen.drawRectF(68,9,1,1)
-
-        --control center button
-        c(100, 100, 100)
-        screen.drawLine(81, 2, 81, 13)
-        c(150, 150, 150)
-        drawRoundedRect(84, 1, 10, 12)
+        drawLogo(255,"") --draw logo with full opacity and no text
         c(200,200,200)
-        drawToggle(85, 3, false)
-        drawToggle(85, 8, true)
+        screen.drawTextBox(0, 55, 96, 6, carName, 0, 0)
 
-        --home button
-        drawRoundedRect(11, 1, 8, 12)
-        c(100, 100, 100)
-        screen.drawTriangleF(12,7.5,18,7.5,15,4.5)
-        screen.drawRectF(13,8.5,5,4)
-        c(200,200,200)
-        screen.drawRectF(15,10.5,1,2)
+        if towConnected then
+            --tow apps tray
+            c(theme[1][1], theme[1][2], theme[1][3], 250)
+            drawRoundedRect(84,42,10,20)
 
-        --current app dot thing
-        if app ~= 0 then
-            c(250,250,250)
-            if app == 5 then
-                screen.drawLine(88, 14, 91, 14)
-            else
-                screen.drawLine(10+app*15, 14, 15+app*15, 14)
-            end
+            --trailer settings button
+            screen.setColor(100,100,100)
+            drawRoundedRect(85,43,8,8)
+            screen.setColor(50,50,50)
+            screen.drawRectF(90,48,4,1)
+            screen.drawRectF(90,49,1,1)
+            screen.drawRectF(92,49,1,1)
+            c(100,200,100)
+            screen.drawRectF(87,44,4,3)
+            screen.drawRectF(86,45,1,1)
+            screen.setColor(0,0,0)
+            screen.drawRectF(85,49,2,1)
+            screen.drawRectF(86,50,1,1)
+            screen.drawRectF(87,50,2,1)
+            screen.setColor(200,200,200)
+            screen.drawRectF(88,49,1,1)
+            screen.drawRectF(90,45,3,1)
+            screen.drawRectF(91,44,1,1)
+            screen.drawRectF(91,46,1,1)
+
+            --trailer camera button
+            screen.setColor(33,117,255)
+            drawRoundedRect(85,53,8,8)
+            screen.setColor(0,0,0)
+            screen.drawRectF(86,55,7,5)
+            screen.drawRectF(87,54,2,1)
+            screen.setColor(200,200,200)
+            screen.drawRectF(89,57,1,1)
+            screen.drawRectF(89,54,1,1)
         end
+    end
+    
 
-        --cover
-        c(0,0,0,lerp(255, 0, clamp(tick, 0, 1)))
-        screen.drawRectF(0,0,96,64)
+    --draw dock
+    c(theme[1][1], theme[1][2], theme[1][3], 250)
+    screen.drawRectF(0, 0, 96, 15)
 
-        if tick2 >= 0 then
-            name = not exist and "" or appNames[app+1]
-            drawLogo(clamp(tick2, 0, 255), name)
-            c(100,100,100,220)
-            screen.drawText(1, 58, ver)
+    c(200, 200, 200)
+    screen.drawTextBox(1, 1, 12, 30, clockStr, -1, -1)
+
+    --apps
+    -- weather app
+    screen.setColor(33,117,255)
+    drawRoundedRect(22,1,11,12)
+    screen.setColor(226,168,16)
+    screen.drawRectF(24,2,2,4)
+    screen.drawRectF(23,3,4,2)
+    screen.setColor(255,255,255)
+    screen.drawRectF(26,7,6,3)
+    screen.drawRectF(27,6,5,1)
+    screen.drawRectF(28,5,3,1)
+    screen.drawRectF(32,7,1,3)
+    screen.drawRectF(25,8,1,2)
+
+    -- maps
+    screen.setColor(255,255,255)
+    screen.drawRectF(43,1,1,4)
+    screen.drawRectF(44,5,5,1)
+    screen.drawRectF(44,11,5,1)
+    screen.drawRectF(43,12,1,2)
+    screen.setColor(195,181,150)
+    screen.drawRectF(36,6,7,6)
+    screen.drawRectF(38,12,5,2)
+    screen.drawRectF(37,12,1,1)
+    screen.drawRectF(44,12,4,1)
+    screen.drawRectF(44,13,3,1)
+    screen.drawRectF(44,6,5,5)
+    screen.setColor(40,139,20)
+    screen.drawRectF(37,2,6,3)
+    screen.drawRectF(44,2,4,3)
+    screen.drawRectF(48,3,1,2)
+    screen.drawRectF(44,1,3,1)
+    screen.drawRectF(38,1,5,1)
+    screen.drawRectF(36,3,1,2)
+    screen.setColor(3,124,239)
+    screen.drawRectF(36,5,8,1)
+    screen.drawRectF(43,6,1,5)
+    screen.setColor(3,55,239)
+    screen.drawRectF(43,11,1,1)
+    screen.setColor(250,183,15)
+    screen.drawLine(36,7,42,12)
+    screen.drawLine(44,13,45,13)
+
+    -- info
+    screen.setColor(14,2,26)
+    drawRoundedRect(51,1,12,12)
+    screen.setColor(21,19,103)
+    screen.drawRectF(56,3,3,2)
+    screen.drawRectF(56,6,3,6)
+    screen.setColor(0,0,0)
+    screen.drawRectF(54,3,2,1)
+    screen.drawRectF(52,4,2,1)
+    screen.drawRectF(51,5,1,1)
+    screen.drawRectF(56,12,2,1)
+    screen.drawRectF(54,13,2,1)
+    screen.drawRectF(54,6,2,1)
+    screen.drawRectF(52,7,2,1)
+    screen.drawRectF(54,4,2,1)
+    screen.drawRectF(51,8,1,1)
+    screen.drawRectF(52,5,2,1)
+    screen.drawRectF(51,6,1,1)
+    screen.drawRectF(54,7,2,6)
+    screen.drawRectF(52,8,2,5)
+    screen.drawRectF(53,13,1,1)
+    screen.drawRectF(51,9,1,3)
+
+    -- car options
+    screen.setColor(theme[2][1], theme[2][2], theme[2][3])
+    drawRoundedRect(66,1,12,12)
+    screen.setColor(0,0,0)
+    screen.drawRectF(70,2,5,3)
+    screen.drawRectF(70,5,1,7)
+    screen.drawRectF(74,5,1,7)
+    screen.drawRectF(71,7,3,2)
+    screen.drawRectF(71,10,3,2)
+    screen.drawRectF(69,5,1,1)
+    screen.drawRectF(68,6,1,1)
+    screen.drawRectF(75,5,1,1)
+    screen.drawRectF(76,6,1,1)
+    screen.drawRectF(75,8,1,1)
+    screen.drawRectF(76,9,1,1)
+    screen.drawRectF(69,8,1,1)
+    screen.drawRectF(68,9,1,1)
+
+    --control center button
+    c(100, 100, 100)
+    screen.drawLine(81, 2, 81, 13)
+    c(150, 150, 150)
+    drawRoundedRect(84, 1, 10, 12)
+    c(200,200,200)
+    drawToggle(85, 3, false)
+    drawToggle(85, 8, true)
+
+    --home button
+    drawRoundedRect(11, 1, 8, 12)
+    c(100, 100, 100)
+    screen.drawTriangleF(12,7.5,18,7.5,15,4.5)
+    screen.drawRectF(13,8.5,5,4)
+    c(200,200,200)
+    screen.drawRectF(15,10.5,1,2)
+
+    --current app dot thing
+    if app ~= 0 then
+        c(250,250,250)
+        if app == 5 then
+            screen.drawLine(88, 14, 91, 14)
+        else
+            screen.drawLine(10+app*15, 14, 15+app*15, 14)
         end
+    end
+
+    --cover
+    c(0,0,0,lerp(255, 0, clamp(tick, 0, 1)))
+    screen.drawRectF(0,0,96,64)
+
+    if tick2 >= 0 then
+        name = not exist and "" or appNames[app+1]
+        drawLogo(clamp(tick2, 0, 255), name)
+        c(100,100,100,220)
+        screen.drawText(1, 58, ver)
     end
 end
 
@@ -332,10 +349,6 @@ end
 
 function isPointInRectangle(rectX, rectY, rectW, rectH)
 	return touchX > rectX and touchY > rectY and touchX < rectX+rectW and touchY < rectY+rectH
-end
-
-function lerp(v0,v1,t)
-    return v1*t+v0*(1-clamp(t, 0, 1))
 end
 
 function clamp(x, min, max)
@@ -387,7 +400,7 @@ function drawLogo(tick, text)
     c(200,200,200,tick)
     screen.drawTextBox(0,44,96,8,text, 0, 0)
     
-    screen.setColor(30, 100, 196, tick)
+    c(30, 100, 196, tick)
     screen.drawRectF(56,27,2,13)
     screen.drawRectF(55,28,1,11)
     screen.drawRectF(58,28,1,11)

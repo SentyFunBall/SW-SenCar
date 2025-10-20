@@ -67,15 +67,18 @@ end
 -- try require("Folder.Filename") to include code from another file in this, so you can store code in libraries
 -- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
 
-theme = {}
-info = {properties = {}}
-fuelCollected = false
-ticks = 0
-mapZoom = 2
+local theme = { { 47, 51, 78 }, { 86, 67, 143 }, { 128, 95, 164 } }
+local info = {properties = {}}
+local fuelCollected = false
+local ticks = 0
+local mapZoom = 2
 
-pi = math.pi
-pi2 = pi*2
-oneDeg = pi/180
+local pi = math.pi
+local pi2 = pi*2
+local oneDeg = pi/180
+
+local lastClock = 0
+local clockstr = ""
 
 info.properties.fuelwarn = property.getNumber("Fuel Warn %")/100
 info.properties.tempwarn = property.getNumber("Temp Warn")
@@ -83,7 +86,7 @@ info.properties.upshift = property.getNumber("Upshift RPS")
 info.properties.downshift = property.getNumber("Downshift RPS")
 info.properties.topspeed = property.getNumber("Top Speed (m/s)")/100
 info.properties.ev = property.getBool("EV Mode (Do not change)")
-usingSenconnect = property.getBool("Enable SenConnect") --disables map rendering, in favor of SenConnect's map
+local usingSenconnect = property.getBool("Enable SenConnect") --disables map rendering, in favor of SenConnect's map
 
 function onTick()
     acc = input.getBool(1)
@@ -112,15 +115,19 @@ function onTick()
     touch = input.getBool(2)
 
     clock = input.getNumber(13)
-    if input.getBool(32) then
-        clock = ("%02d"):format(math.floor(clock*24)%12)..":"..("%02d"):format(math.floor((clock*1440)%60))
-        if string.sub(clock, 1, 2) == "00" then
-            clock = "12"..string.sub(clock, 3,-1)
-        end
-    else
-        clock = ("%02d"):format(math.floor(clock*24))..":"..("%02d"):format(math.floor((clock*1440)%60))
-    end
 
+    if clock ~= lastClock then
+        lastClock = clock
+        if input.getBool(32) then
+            clockstr = ("%02d"):format(math.floor(clock * 24) % 12) .. ":" .. ("%02d"):format(math.floor((clock * 1440) % 60))
+            if string.sub(clockstr, 1, 2) == "00" then
+                clockstr = "12" .. string.sub(clockstr, 3, -1)
+            end
+        else
+            clockstr = ("%02d"):format(math.floor(clock * 24)) .. ":" .. ("%02d"):format(math.floor((clock * 1440) % 60))
+        end
+    end
+        
     if not fuelCollected then
         ticks = ticks + 1
     end
@@ -138,15 +145,16 @@ function onTick()
     end
 
     mapZoom = mapZoom + (info.speed / info.properties.topspeed) * 0.1
-
-    --input theme
+    
+    -- load from inputs
     for i = 1, 9 do
-        row = math.ceil(i/3)
-        if not theme[row] then theme[row] = {} end
-        theme[row][(i-1)%3+1] = input.getNumber(i+23)
-    end
-    if theme[1][1] == 0 then --fallback
-        theme = {{47,51,78}, {86,67,143}, {128,95,164}}
+        local row = math.ceil(i/3)
+        local col = (i-1)%3+1
+        local value = input.getNumber(i+23)
+        if value ~= 0 then
+            if not theme[row] then theme[row] = {} end
+            theme[row][col] = value
+        end
     end
 end
 
@@ -271,9 +279,11 @@ function onDraw()
         elseif info.gear == 2 then
             dst(78,9,"N",2)
         elseif info.gear >= 3 then
-            if info.properties.trans then --auto
-                dst(77,9,"D",2)
-                dst(84,13,string.format("%.0f", info.gear-2))
+            if info.properties.ev or info.properties.trans then
+                dst(info.properties.ev and 78 or 77, 9,"D",2)
+                if not info.properties.ev and info.properties.trans then
+                    dst(84,13,string.format("%.0f", info.gear-2))
+                end
             else
                 dst(78,9,string.format("%.0f", info.gear-2),2)
             end
@@ -282,13 +292,14 @@ function onDraw()
         -- units
         c(150, 150, 150)
         if info.properties.ev then
+            dst(73, 20, "PWR")
         else
             dst(info.properties.trans and 73 or 74, 20, info.properties.trans and "auto" or "man")
         end
         --dst(76, 1, "rps", 0.8)
     elseif not acc then
         c(100, 100, 100)
-        dst(40, 10, clock)
+        dst(40, 10, clockstr)
         c(80, 80, 80)
         if info.properties.ev then
             dst(28, 20, "Tap to start")
@@ -336,8 +347,8 @@ end
 
 
 function drawPointer(x,y,c,s)
-    d = 5
-    sin, pi, cos = math.sin, math.pi, math.cos
+    local d = 5
+    local sin, pi, cos = math.sin, math.pi, math.cos
     screen.drawTriangleF(sin(c - pi) * s + x + 1, cos(c - pi) * s + y +1, sin(c - pi/d) * s + x +1, cos(c - pi/d) * s + y +1, sin(c + pi/d) * s + x +1, cos(c + pi/d) * s + y +1)
 end
 
@@ -351,22 +362,32 @@ function gpsSpeed(x,y,lX,lY) -- function by GOM
 end
 
 --- draws an arc around pixel coords [x], [y].
-function drawCircle(x,y,outer_rad, inner_rad, step, begin_ang, arc_ang, dir)
+function drawCircle(x, y, outer_rad, inner_rad, step, begin_ang, arc_ang, dir)
     dir = dir or 1
-    sin=math.sin cos=math.cos pi=math.pi pi2=math.pi*2
-    step_s=pi2/step*-dir
-    ba=begin_ang*dir
-    ora=outer_rad
-    ira=inner_rad
-    for i=0, math.floor(arc_ang / (pi2 / step))-1 do
-        step_p=ba+step_s*i
-        step_n=ba+step_s*(i+1)
-        screen.drawTriangleF(x+sin(step_p)*ora, y+cos(step_p)*ora, x+sin(step_n)*ora, y+cos(step_n)*ora, x+sin(step_p)*ira, y+cos(step_p)*ira)
-        screen.drawTriangleF(x+sin(step_n)*ora, y+cos(step_n)*ora, x+sin(step_n)*ira, y+cos(step_n)*ira, x+sin(step_p)*ira, y+cos(step_p)*ira)
+    local step_s = pi2 / step * -dir
+    local ba = begin_ang * dir
+    local steps = math.floor(arc_ang / (pi2 / step))
+    local sin, cos = math.sin, math.cos
+    
+    for i = 0, steps - 1 do
+        local step_p = ba + step_s * i
+        local step_n = ba + step_s * (i + 1)
+        
+        -- Cache sin/cos calculations
+        local sin_p, cos_p = sin(step_p), cos(step_p)
+        local sin_n, cos_n = sin(step_n), cos(step_n)
+        
+        local x1, y1 = x + sin_p * outer_rad, y + cos_p * outer_rad
+        local x2, y2 = x + sin_n * outer_rad, y + cos_n * outer_rad
+        local x3, y3 = x + sin_p * inner_rad, y + cos_p * inner_rad
+        local x4, y4 = x + sin_n * inner_rad, y + cos_n * inner_rad
+        
+        screen.drawTriangleF(x1, y1, x2, y2, x3, y3)
+        screen.drawTriangleF(x2, y2, x4, y4, x3, y3)
     end
 end
 
 function easeLerp(v0, v1, t)
-    ease = t <= 0.5 and 2 * t * t or -1 + (4 - 2 * t) * t
+    local ease = t <= 0.5 and 2 * t * t or -1 + (4 - 2 * t) * t
     return v0 + (v1 - v0) * ease
 end

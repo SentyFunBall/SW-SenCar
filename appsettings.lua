@@ -48,7 +48,7 @@ end
 -- try require("Folder.Filename") to include code from another file in this, so you can store code in libraries
 -- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
 
-_colors = {
+local _colors = {
     { { 47, 51, 78 },  { 86, 67, 143 },  { 128, 95, 164 } }, --sencar 5 in the micro
     { { 17, 15, 107 }, { 22, 121, 196 }, { 48, 208, 217 } }, --blue
     { { 74, 27, 99 },  { 124, 42, 161 }, { 182, 29, 224 } }, --purple
@@ -58,14 +58,15 @@ _colors = {
     { { 92, 50, 1 },   { 158, 92, 16 },  { 201, 119, 24 } }  --orange
 }
 
-scrollPixels = 0
-defaultTheme = property.getNumber("Theme")
-open = false
-maxScroll = 0
-beforeRainbow = defaultTheme --which theme it was before setting rainbow mode
-lastRainbowMode = false
+local scrollable = 0
+local scrollPixels = 0
+local defaultTheme = property.getNumber("Theme")
+local open = false
+local maxScroll = 0
+local beforeRainbow = defaultTheme --which theme it was before setting rainbow mode
+local lastRainbowMode = false
 
-themes = {
+local themes = {
     "Default",
     "Blue",
     "purple",
@@ -75,7 +76,7 @@ themes = {
     "Orange"
 }
 
-actions = { --action {"name", state, type (0=toggle,1=dropdown,2=slider), isShow, extra}
+local actions = { --action {"name", state, type (0=toggle,1=dropdown,2=slider), isShow, extra}
     { "Metric",      false, 0 },
     { "Manual",      false, 0 },
     { "ESC Off",     false, 0 },
@@ -84,8 +85,9 @@ actions = { --action {"name", state, type (0=toggle,1=dropdown,2=slider), isShow
     { "Gradient Res",0,     2, { n = 1, m = 9, v = 3, s = 0.1} },
     { "Theme",       0,     1, themes},
 }
-actionHeightOffsets = {}
-total = 0
+local actionHeightOffsets = {}
+local total = 0
+
 for index, action in pairs(actions) do
     local height = 0
     if action[3] == 0 then
@@ -104,7 +106,7 @@ end
 actions[1][2] = not property.getBool("Units")
 actions[2][2] = not property.getBool("Transmission")
 actions[5][2] = defaultTheme
-theme = _colors[defaultTheme]
+local theme = _colors[defaultTheme]
 
 function onTick()
     acc = input.getBool(1)
@@ -131,12 +133,17 @@ function onTick()
         end
 
         --action inputs
-        for i, action in pairs(actions) do
-            if not lock then
+        if not lock then
+            for i, action in pairs(actions) do
                 scrollable = 15 - scrollPixels + actionHeightOffsets[i]
-                if action[3] == 0 and press == 2 and isPointInRectangle(14, 15 - scrollPixels + actionHeightOffsets[i], 80, 8) then --toggle
+                local toggleScrollable = 15 - scrollPixels + actionHeightOffsets[i]
+                if scrollable < 15 or scrollable > 64 then
+                    goto continue -- do nothing, out of view
+                end
+
+                if action[3] == 0 and press == 2 and isPointInRectangle(14, toggleScrollable, 80, 8) then --toggle
                     action[2] = not action[2]
-                elseif action[3] == 1 and press == 2 then --dropdown
+                elseif action[3] == 1 and press == 2 then                                                 --dropdown
                     if isPointInRectangle(14, scrollable, 80, 8) then
                         open = not open
                     end
@@ -152,7 +159,7 @@ function onTick()
                     end
                 elseif action[3] == 2 and press > 1 then --slider
                     --down
-                    if isPointInRectangle( 14, scrollable, 8, 8) then
+                    if isPointInRectangle(14, scrollable, 8, 8) then
                         action[4].v = clamp(action[4].v - action[4].s, action[4].n, action[4].m)
                     end
                     --up
@@ -161,6 +168,7 @@ function onTick()
                     end
                 end
             end
+            ::continue::
         end
     end
 
@@ -201,42 +209,41 @@ function onTick()
 end
 
 function onDraw()
-    if acc and app == 5 then
-        --[[* MAIN OVERLAY *]] --
-        c(70, 70, 70)
-        screen.drawRectF(0, 0, 96, 64)
+    if not acc or app ~= 5 then return end
+    --[[* MAIN OVERLAY *]] --
+    c(70, 70, 70)
+    screen.drawRectF(0, 0, 96, 64)
 
-        hcolor = { theme[2][1] + 25, theme[2][2] + 25, theme[2][3] + 25 }
-        c(table.unpack(hcolor))
-        screen.drawText(15, 16 - scrollPixels, "Settings")
-        c(100, 100, 100)
-        scrollable = 23 - scrollPixels
-        screen.drawLine(15, scrollable, 80, scrollable)
+    local hcolor = { theme[2][1] + 25, theme[2][2] + 25, theme[2][3] + 25 }
+    c(table.unpack(hcolor))
+    screen.drawText(15, 16 - scrollPixels, "Settings")
+    c(100, 100, 100)
+    scrollable = 23 - scrollPixels
+    screen.drawLine(15, scrollable, 80, scrollable)
 
-        --draw each action
-        for i, action in pairs(actions) do
-            scrollable = 15 - scrollPixels + actionHeightOffsets[i]
-            if action[3] == 0 then     --toggle
-                drawFullToggle(15, scrollable, action[2], action[1], theme[3], theme[1])
-            elseif action[3] == 1 then --dropdown
-                drawDropdown(15, scrollable, open, action[1], action[4], theme, theme[3], theme[1])
-            elseif action[3] == 2 then --slider
-                drawSlider(15, scrollable - 8, action[1], action[4].v, action[4].n, action[4].m, theme[3], theme[1])
-            end
+    --draw each action
+    for i, action in pairs(actions) do
+        scrollable = 15 - scrollPixels + actionHeightOffsets[i]
+        if action[3] == 0 then     --toggle
+            drawFullToggle(15, scrollable, action[2], action[1], theme[3], theme[1])
+        elseif action[3] == 1 then --dropdown
+            drawDropdown(15, scrollable, open, action[1], action[4], theme, theme[3], theme[1])
+        elseif action[3] == 2 then --slider
+            drawSlider(15, scrollable - 8, action[1], action[4].v, action[4].n, action[4].m, theme[3], theme[1])
         end
-
-        --[[* CONTROLS OVERLAY *]] --
-        c(theme[1][1], theme[1][2], theme[1][3], 250)
-        screen.drawRectF(0, 15, 13, 64)
-
-        if scrollUp then c(150, 150, 150) else c(170, 170, 170) end
-        drawRoundedRect(1, 19, 10, 18)
-        if scrollDown then c(150, 150, 150) else c(170, 170, 170) end
-        drawRoundedRect(1, 40, 10, 18)
-        c(100, 100, 100)
-        screen.drawTriangleF(3, 29, 6, 25, 10, 29)
-        screen.drawTriangleF(2, 48, 6, 53, 11, 48)
     end
+
+    --[[* CONTROLS OVERLAY *]] --
+    c(theme[1][1], theme[1][2], theme[1][3], 250)
+    screen.drawRectF(0, 15, 13, 64)
+
+    if scrollUp then c(150, 150, 150) else c(170, 170, 170) end
+    drawRoundedRect(1, 19, 10, 18)
+    if scrollDown then c(150, 150, 150) else c(170, 170, 170) end
+    drawRoundedRect(1, 40, 10, 18)
+    c(100, 100, 100)
+    screen.drawTriangleF(3, 29, 6, 25, 10, 29)
+    screen.drawTriangleF(2, 48, 6, 53, 11, 48)
 end
 
 function c(...) 

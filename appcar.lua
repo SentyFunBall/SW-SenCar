@@ -49,15 +49,15 @@ end
 -- try require("Folder.Filename") to include code from another file in this, so you can store code in libraries
 -- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
 
-theme = {}
-scrollPixels = 0
-maxScroll = 92
+local theme = { { 47, 51, 78 }, { 86, 67, 143 }, { 128, 95, 164 } }
+local scrollPixels = 0
+local maxScroll = 92
 
-actions = {
+local actions = {
     {"Hatch", false}, --cabin wall on echolodia5,2
     {"Back light", false}, --not sure what this is on other cars other than echolodia
     {"Transponder", false},
-    {"Heat", false},
+    {"Heater", false},
     {"Doors", false},
     {"Disable chime", false}, --sucks for non pro cars i guess
 }
@@ -73,14 +73,15 @@ function onTick()
 
     lock = input.getBool(4)
 
-    --input theme
+    -- load from inputs
     for i = 1, 9 do
-        row = math.ceil(i/3)
-        if not theme[row] then theme[row] = {} end
-        theme[row][(i-1)%3+1] = input.getNumber(i+23)
-    end
-    if theme[1][1] == 0 then --fallback
-        theme = {{47,51,78}, {86,67,143}, {128,95,164}}
+        local row = math.ceil(i/3)
+        local col = (i-1)%3+1
+        local value = input.getNumber(i+23)
+        if value ~= 0 then
+            if not theme[row] then theme[row] = {} end
+            theme[row][col] = value
+        end
     end
 
     if app == 4 then --car
@@ -107,23 +108,22 @@ function onTick()
 end
 
 function onDraw()
-    if acc and app == 4 then
+    if not acc or app ~= 4 then return end
 ----------[[* MAIN OVERLAY *]]--
-        c(70, 70, 70)
-        screen.drawRectF(0, 0, 96, 64)
+    c(70, 70, 70)
+    screen.drawRectF(0, 0, 96, 64)
 
-        hcolor = {theme[2][1]+25, theme[2][2]+25, theme[2][3]+25}
-        rcolor = theme[3]
-        tcolor = theme[1]
-        c(table.unpack(hcolor))
-        screen.drawText(15,16-scrollPixels, "Car options")
-        c(100,100,100)
-        screen.drawLine(15,23-scrollPixels,80,23-scrollPixels)
+    local hcolor = {theme[2][1]+25, theme[2][2]+25, theme[2][3]+25}
+    local rcolor = theme[3]
+    local tcolor = theme[1]
+    c(table.unpack(hcolor))
+    screen.drawText(15,16-scrollPixels, "Car options")
+    c(100,100,100)
+    screen.drawLine(15,23-scrollPixels,80,23-scrollPixels)
 
-        --draw the boxes procedually
-        for i=1, #actions do
-            drawFullToggle(15, 15-scrollPixels+i*11, actions[i][2], actions[i][1], rcolor, tcolor)
-        end
+    --draw the boxes procedually
+    for i=1, #actions do
+        drawFullToggle(15, 15-scrollPixels+i*11, actions[i][2], actions[i][1], rcolor, tcolor)
     end
 
 ----------[[* CONTROLS OVERLAY *]]--

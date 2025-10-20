@@ -50,7 +50,7 @@ end
 -- try require("Folder.Filename") to include code from another file in this, so you can store code in libraries
 -- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
 
-local theme = {}
+local theme = { { 47, 51, 78 }, { 86, 67, 143 }, { 128, 95, 164 } }
 local zoom = 3
 
 local mapX, mapY = 0, 0
@@ -74,14 +74,15 @@ function onTick()
     y = input.getNumber(5)
     compass = input.getNumber(6)*(math.pi*2)
 
-    --input theme
+    -- load from inputs
     for i = 1, 9 do
-        row = math.ceil(i/3)
-        if not theme[row] then theme[row] = {} end
-        theme[row][(i-1)%3+1] = input.getNumber(i+23)
-    end
-    if theme[1][1] == 0 then --fallback
-        theme = {{47,51,78}, {86,67,143}, {128,95,164}}
+        local row = math.ceil(i/3)
+        local col = (i-1)%3+1
+        local value = input.getNumber(i+23)
+        if value ~= 0 then
+            if not theme[row] then theme[row] = {} end
+            theme[row][col] = value
+        end
     end
 
 
@@ -110,97 +111,96 @@ function onTick()
 end
 
 function onDraw()
-    if acc and app == 2 then
-----------[[* MAIN OVERLAY *]]--
+    if not acc or app ~= 2 then return end
 
-        screen.drawMap(mapX, mapY, zoom)
+    ---[[* MAIN OVERLAY *]]---
+    screen.drawMap(mapX, mapY, zoom)
 
-        c(theme[2][1], theme[2][2], theme[2][3])
-        screen.drawCircle(48, 32, 1)
-        dx, dy = map.mapToScreen(mapX, mapY, zoom, 96, 64, x, y) --drawX, drawY
-        drawPointer(dx, dy, compass, 5)
+    c(theme[2][1], theme[2][2], theme[2][3])
+    screen.drawCircle(48, 32, 1)
+    dx, dy = map.mapToScreen(mapX, mapY, zoom, 96, 64, x, y) --drawX, drawY
+    drawPointer(dx, dy, compass, 5)
 
-        if wx ~= 0 then --if waypoint is active
-            -- find waypoint coords and draw the line from player to it
-            dx2,dy2 = map.mapToScreen(mapX, mapY, zoom, 96, 64, wx, wy)
-            screen.drawLine(dx2, dy2, dx, dy)
+    if wx ~= 0 then --if waypoint is active
+        -- find waypoint coords and draw the line from player to it
+        dx2,dy2 = map.mapToScreen(mapX, mapY, zoom, 96, 64, wx, wy)
+        screen.drawLine(dx2, dy2, dx, dy)
 
-            --draw the waypoint
-            c(theme[3][1], theme[3][2], theme[3][3])
-            screen.drawCircle(dx2,dy2,1)
+        --draw the waypoint
+        c(theme[3][1], theme[3][2], theme[3][3])
+        screen.drawCircle(dx2,dy2,1)
 
-            --find midpoint of line and draw distance in box
-            c(200,200,200)
-            sx, sy = (dx+dx2)/2, (dy+dy2)/2 --averageX, averageY
-            tempx, tempy = map.screenToMap(mapX, mapY, zoom, 96, 64, dx, dy)
-            tempx2, tempy2 = map.screenToMap(mapX, mapY, zoom, 96, 64, dx2, dy2)
-            dist = math.sqrt((tempx2 - tempx)*(tempx2 - tempx) + (tempy2 - tempy)*(tempy2 - tempy)) --should give us world distance
-            dist = dist/1000
-            if zoom < dist * 4 then 
-                if units then --imperial
-                    text = ("%.1fmi"):format(dist/1.6)
-                else-- metric
-                    text = ("%.1fk"):format(dist)
-                end
-
-                drawRoundedRect(math.floor(sx-10), math.floor(sy-10), #text*5+5, 8) 
-                c(theme[2][1], theme[2][2], theme[2][3])
-                dst(sx-8, sy-8, text)
+        --find midpoint of line and draw distance in box
+        c(200,200,200)
+        sx, sy = (dx+dx2)/2, (dy+dy2)/2 --averageX, averageY
+        tempx, tempy = map.screenToMap(mapX, mapY, zoom, 96, 64, dx, dy)
+        tempx2, tempy2 = map.screenToMap(mapX, mapY, zoom, 96, 64, dx2, dy2)
+        dist = math.sqrt((tempx2 - tempx)*(tempx2 - tempx) + (tempy2 - tempy)*(tempy2 - tempy)) --should give us world distance
+        dist = dist/1000
+        if zoom < dist * 4 then 
+            if units then --imperial
+                text = ("%.1fmi"):format(dist/1.6)
+            else-- metric
+                text = ("%.1fk"):format(dist)
             end
-        end
 
-        -- draw the coordinates box
-        c(theme[1][1], theme[1][2], theme[1][3], 250)
-        if units then --imperial
-            tx = "X:"..("%.1fmi"):format(mapX/1609)
-            ty = "Y:"..("%.1fmi"):format(mapY/1609)
-        else --metric
-            tx = "X:"..("%.1fkm"):format(mapX/1000)
-            ty = "Y:"..("%.1fkm"):format(mapY/1000)
+            drawRoundedRect(math.floor(sx-10), math.floor(sy-10), #text*5+5, 8) 
+            c(theme[2][1], theme[2][2], theme[2][3])
+            dst(sx-8, sy-8, text)
         end
-        drawRoundedRect(62, 47, 32, 15)
-        drawRoundedRect(14, 53, 28, 9) --this is for the zoom box
-        c(200, 200, 200)
-        dst(63, 50, tx)
-        dst(63, 56, ty)
-        screen.drawLine(17,54,39,54)
-        screen.drawLine(17,53,17,54)
-        screen.drawLine(38,53,38,54)
+    end
 
-        --draw the cur zoom according to the unit
-        if units then
-            dst(16, 56, string.format("%.2fmi", zoom/1.6))
-        else
-            dst(16, 56, string.format("%.2fkm", zoom))
-        end
+    -- draw the coordinates box
+    c(theme[1][1], theme[1][2], theme[1][3], 250)
+    if units then --imperial
+        tx = "X:"..("%.1fmi"):format(mapX/1609)
+        ty = "Y:"..("%.1fmi"):format(mapY/1609)
+    else --metric
+        tx = "X:"..("%.1fkm"):format(mapX/1000)
+        ty = "Y:"..("%.1fkm"):format(mapY/1000)
+    end
+    drawRoundedRect(62, 47, 32, 15)
+    drawRoundedRect(14, 53, 28, 9) --this is for the zoom box
+    c(200, 200, 200)
+    dst(63, 50, tx)
+    dst(63, 56, ty)
+    screen.drawLine(17,54,39,54)
+    screen.drawLine(17,53,17,54)
+    screen.drawLine(38,53,38,54)
 
-        --if the map is touched, put a light black box over it
-        if mapt then
-            c(0,0,0,100)
-            screen.drawRectF(12,14,96,64)
-        end
+    --draw the cur zoom according to the unit
+    if units then
+        dst(16, 56, string.format("%.2fmi", zoom/1.6))
+    else
+        dst(16, 56, string.format("%.2fkm", zoom))
+    end
+
+    --if the map is touched, put a light black box over it
+    if mapt then
+        c(0,0,0,100)
+        screen.drawRectF(12,14,96,64)
+    end
 
 ----------[[* CONTROLS OVERLAY *]]--
-        c(theme[1][1], theme[1][2], theme[1][3], 250)
-        screen.drawRectF(0, 15, 13, 64)
+    c(theme[1][1], theme[1][2], theme[1][3], 250)
+    screen.drawRectF(0, 15, 13, 64)
 
-        --zoom icons
-        if zoomin then c(150,150,150) else c(170, 170, 170)end
-        drawRoundedRect(1, 16, 10, 10)
-        if zoomout then c(150,150,150) else c(170, 170, 170)end
-        drawRoundedRect(1,28,10,10)
-        if resetbtn then c(150,150,150) else c(170, 170, 170)end
-        drawRoundedRect(1,40,10,10)
-        if wbtn then c(150,150,150) else c(170, 170, 170)end
-        drawRoundedRect(1,52,10,10)
+    --zoom icons
+    if zoomin then c(150,150,150) else c(170, 170, 170)end
+    drawRoundedRect(1, 16, 10, 10)
+    if zoomout then c(150,150,150) else c(170, 170, 170)end
+    drawRoundedRect(1,28,10,10)
+    if resetbtn then c(150,150,150) else c(170, 170, 170)end
+    drawRoundedRect(1,40,10,10)
+    if wbtn then c(150,150,150) else c(170, 170, 170)end
+    drawRoundedRect(1,52,10,10)
 
-        c(100,100,100)
-        screen.drawText(5, 43, "R")
-        screen.drawLine(4, 33, 9, 33)
-        screen.drawLine(4, 21, 9, 21)
-        screen.drawLine(6, 19, 6, 24)
-        if wx == 0 then screen.drawText(5, 55, "W") else screen.drawText(5, 55, "C") end
-    end
+    c(100,100,100)
+    screen.drawText(5, 43, "R")
+    screen.drawLine(4, 33, 9, 33)
+    screen.drawLine(4, 21, 9, 21)
+    screen.drawLine(6, 19, 6, 24)
+    if wx == 0 then screen.drawText(5, 55, "W") else screen.drawText(5, 55, "C") end
 end
 
 function c(...) local _={...}
