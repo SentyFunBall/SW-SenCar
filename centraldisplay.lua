@@ -40,8 +40,8 @@ do
         simulator:setInputBool(1, not simulator:getIsToggled(1))
         simulator:setInputBool(2, not simulator:getIsToggled(2))
         simulator:setInputBool(3, not simulator:getIsToggled(3))
-        simulator:setInputNumber(3, simulator:getSlider(1))
-        simulator:setInputNumber(4, math.floor(simulator:getSlider(2) * 9 + 1))
+        simulator:setInputNumber(3, simulator:getSlider(1)) --clock
+        simulator:setInputNumber(4, 4) --gradient resolution
     end;
 end
 ---@endsection
@@ -382,19 +382,26 @@ function drawToggle(x,y,state)
 end
 
 function drawLogo(tick, text)
-    c(theme[3][1],theme[3][2],theme[3][3],tick)
-    drawRoundedRect(26,18,42,34)
-    screen.setColor(30,100,196,tick)
-    screen.drawRectF(42,21,12,3)
-    screen.drawRectF(38,24,4,17)
-    screen.drawRectF(42,41,10,3)
-    screen.drawRectF(52,35,3,6)
-    screen.drawRectF(43,32,9,3)
-    screen.drawRectF(41,34,3,3)
-    screen.drawRectF(51,34,2,3)
-    screen.drawRectF(51,39,2,3)
-    screen.drawRectF(40,40,3,2)
-    screen.drawRectF(40,22,4,4)
+    --[[c(theme[3][1],theme[3][2],theme[3][3],tick)
+    drawRoundedRect(26,18,42,34)]]
     c(200,200,200,tick)
     screen.drawTextBox(0,44,96,8,text, 0, 0)
+    
+    screen.setColor(30, 100, 196, tick)
+    screen.drawRectF(56,27,2,13)
+    screen.drawRectF(55,28,1,11)
+    screen.drawRectF(58,28,1,11)
+    screen.drawRectF(36,21,27,2)
+    screen.drawRectF(35,23,27,1)
+    screen.drawRectF(38,20,24,1)
+    screen.drawRectF(35,22,5,8)
+    screen.drawRectF(34,24,1,4)
+    screen.drawRectF(40,24,1,1)
+    screen.drawRectF(40,30,5,8)
+    screen.drawRectF(35,36,7,4)
+    screen.drawRectF(39,35,5,4)
+    screen.drawRectF(34,37,1,2)
+    screen.drawRectF(45,32,1,4)
+    screen.drawRectF(38,28,4,4)
+    screen.drawRectF(36,29,8,2)
 end

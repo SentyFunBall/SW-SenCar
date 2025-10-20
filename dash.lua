@@ -151,7 +151,7 @@ function onTick()
 end
 
 function onDraw()
-    if acc then
+    if exist then
         if (not usingSenconnect) and info.gear ~= 1 then
             --dont draw map or zoom btns if we're in reverse or if SC is connected (haha magic boolean)
             --screenX, screenY = map.screenToMap(info.gpsX, info.gpsY, 2, 96, 32, 58, 25)
@@ -286,7 +286,7 @@ function onDraw()
             dst(info.properties.trans and 73 or 74, 20, info.properties.trans and "auto" or "man")
         end
         --dst(76, 1, "rps", 0.8)
-    else
+    elseif not acc then
         c(100, 100, 100)
         dst(40, 10, clock)
         c(80, 80, 80)
