@@ -203,29 +203,46 @@ function onDraw()
         drawCircle(80, 16, 15, 13, 60, outStart, outEnd, -1) --temp
 
         -- labels (credit to mrlennyn for the ui builder (fuck off copilot i thought i uninstalled you))
+        if info.properties.ev then
+            --- power usage
+            c(150, 150, 150)
+            screen.drawRectF(93,27,2,2)
+            screen.drawLine(93,29,91,31)
+            screen.drawRectF(91,27,2,1)
+            screen.drawRectF(92,26,2,1)
+            screen.drawRectF(93,25,2,1)
+        else
         --- temp
-        if info.temp > info.properties.tempwarn then
-            c(150,50,50)
-        else
-            c(150,150,150)
+            if info.temp > info.properties.tempwarn then
+                c(150,50,50)
+            else
+                c(150,150,150)
+            end
+            screen.drawLine(90,30,95,30)
+            screen.drawLine(90,28,95,28)
+            screen.drawLine(92,24,92,28)
+            screen.drawRectF(93,24,1,1)
+            screen.drawRectF(93,26,1,1)
         end
-        screen.drawLine(90,30,95,30)
-        screen.drawLine(90,28,95,28)
-        screen.drawLine(92,24,92,28)
-        screen.drawRectF(93,24,1,1)
-        screen.drawRectF(93,26,1,1)
 
-        --- fuel
-        if info.fuel/info.properties.maxfuel < info.properties.fuelwarn then
-            c(150,50,50)
+        if info.properties.ev then
+            -- battery
+            c(150, 150, 150)
+            screen.drawRect(1, 27, 5, 3)
+            screen.drawRectF(7, 28, 1, 2)
         else
-            c(150,150,150)
+            --- fuel
+            if info.fuel / info.properties.maxfuel < info.properties.fuelwarn then
+                c(150, 50, 50)
+            else
+                c(150, 150, 150)
+            end
+            screen.drawRectF(1,29,3,2)
+            screen.drawRect(1,26,2,2)
+            screen.drawLine(5,27,5,31)
+            screen.drawRectF(4,29,1,1)
+            screen.drawRectF(4,26,1,1)
         end
-        screen.drawRectF(1,29,3,2)
-        screen.drawRect(1,26,2,2)
-        screen.drawLine(5,27,5,31)
-        screen.drawRectF(4,29,1,1)
-        screen.drawRectF(4,26,1,1)
 
         --- drive modes
         c(theme[2][1], theme[2][2], theme[2][3])
@@ -292,7 +309,7 @@ function onDraw()
         -- units
         c(150, 150, 150)
         if info.properties.ev then
-            dst(73, 20, "PWR")
+            dst(75, 20, "PWR")
         else
             dst(info.properties.trans and 73 or 74, 20, info.properties.trans and "auto" or "man")
         end
