@@ -53,7 +53,7 @@ local _colors = {
     { { 17, 15, 107 }, { 22, 121, 196 }, { 48, 208, 217 } }, --blue
     { { 74, 27, 99 },  { 124, 42, 161 }, { 182, 29, 224 } }, --purple
     { { 35, 54, 41 },  { 29, 87, 36 },   { 12, 133, 26 } },  --green
-    { { 69, 1, 10 },   { 122, 0, 0 },    { 160, 9, 9 } },    --TE red
+    { { 69, 1, 10 },   { 122, 1, 1 },    { 160, 9, 9 } },    --TE red
     { { 38, 38, 38 },  { 92, 92, 92 },   { 140, 140, 140 } }, --grey
     { { 92, 50, 1 },   { 158, 92, 16 },  { 201, 119, 24 } }  --orange
 }
@@ -80,13 +80,17 @@ local actions = { --action {"name", state, type (0=toggle,1=dropdown,2=slider), 
     { "Metric",      false, 0 },
     { "Manual",      false, 0 },
     { "ESC Off",     false, 0 },
-    { "RGB Mode",    false, 0 },
+    { "RGB Mode",     false, 0 },
+    { "Mp Mode", false, 0},
     { "Hue adjust",  0,     2, { n = -180, m = 180, v = 0, s = 1 } },
     { "Gradient Res",0,     2, { n = 1, m = 9, v = 3, s = 0.1} },
     { "Theme",       0,     1, themes},
 }
 local actionHeightOffsets = {}
 local total = 0
+
+local sleepTicks = 0
+local isSleeping = false
 
 for index, action in pairs(actions) do
     local height = 0
@@ -105,7 +109,7 @@ end
 
 actions[1][2] = not property.getBool("Units")
 actions[2][2] = not property.getBool("Transmission")
-actions[5][2] = defaultTheme
+actions[6][2] = defaultTheme
 local theme = _colors[defaultTheme]
 
 function onTick()
@@ -116,10 +120,28 @@ function onTick()
     touchY = input.getNumber(2)
     press = input.getBool(3) and press + 1 or 0
 
-    lock = input.getBool(4)
+    local lock = input.getBool(4)
 
-    if app == 5 then --die
-        maxScroll = open and 176 or 120 --adjust max scroll if dropdown is open
+    local enableSleep = actions[5][2]
+
+    -- sleep logic
+    if enableSleep then
+        if press > 0 then
+            sleepTicks = 0
+            isSleeping = false
+        else
+            sleepTicks = sleepTicks + 1
+            if sleepTicks > 600 then
+                isSleeping = true
+            end
+        end
+    else
+        sleepTicks = 0
+        isSleeping = false
+    end
+
+    if app == 5 and not isSleeping then --die
+        maxScroll = open and 187 or 131 --adjust max scroll if dropdown is open
         scrollPixels = math.min(scrollPixels, maxScroll - 64)
 
         --scroll
@@ -137,7 +159,7 @@ function onTick()
             for i, action in pairs(actions) do
                 scrollable = 15 - scrollPixels + actionHeightOffsets[i]
                 local toggleScrollable = 15 - scrollPixels + actionHeightOffsets[i]
-                if scrollable < 15 or scrollable > 64 then
+                if action[3] == 0 and scrollable < 15 then
                     goto continue -- do nothing, out of view
                 end
 
@@ -153,7 +175,7 @@ function onTick()
                         if open and isPointInRectangle(14, scrollable + #themes * j + j, 80, 8) then
                             theme = _colors[j]
                             beforeRainbow = j
-                            actions[5][4].v = 0
+                            actions[6][4].v = 0
                             open = false
                         end
                     end
@@ -167,8 +189,8 @@ function onTick()
                         action[4].v = clamp(action[4].v + action[4].s, action[4].n, action[4].m)
                     end
                 end
+                ::continue::
             end
-            ::continue::
         end
     end
 
@@ -187,7 +209,7 @@ function onTick()
             tempTheme = hsvTheme
         end
         for i, set in ipairs(hsvTheme) do
-            set[1] = (set[1] + actions[5][4].v / 1200) % 1
+            set[1] = (set[1] + actions[6][4].v / 1200) % 1
             tempTheme[i] = set
         end
     end
@@ -195,10 +217,10 @@ function onTick()
     theme = hsvToRgb(tempTheme)
 
     --output
-    for i = 1, 4 do
+    for i = 1, 5 do
         output.setBool(i, not actions[i][2])
     end
-    output.setNumber(1, math.floor(actions[6][4].v))
+    output.setNumber(1, math.floor(actions[7][4].v))
     channel = 24
     for i = 1, 3 do
         for j = 1, 3 do
@@ -209,7 +231,7 @@ function onTick()
 end
 
 function onDraw()
-    if not acc or app ~= 5 then return end
+    if not acc or app ~= 5 or isSleeping then return end
     --[[* MAIN OVERLAY *]] --
     c(70, 70, 70)
     screen.drawRectF(0, 0, 96, 64)

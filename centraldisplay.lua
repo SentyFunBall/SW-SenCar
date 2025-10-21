@@ -64,28 +64,48 @@ local appNames = {"Home", "Weather", "Map", "Info", "Car", "Settings", "SiBTaT+"
 local ver = "v6.dev"
 local lastClock = 0
 local clockStr = ""
+local carName = property.getText("Car name")
 
 local xLim, yLim = 0, 0
+
+local sleepTicks = 0
+local isSleeping = false
 
 function onTick()
     acc = input.getBool(1)
     exist = input.getBool(2)
     towConnected = input.getBool(4) -- note that MC has NOT from the connection
 
-    press = input.getBool(3)
+    local press = input.getBool(3)
     touchX = input.getNumber(1)
     touchY = input.getNumber(2)
 
-    clock = input.getNumber(3)
+    local clock = input.getNumber(3)
     gradientResolution = clamp(input.getNumber(4), 1, 9)
 
-    carName = property.getText("Car name")
-    
+    local enableSleep = not input.getBool(5) -- NOT because settings output is inverted (WHY)
+
+    -- sleep logic
+    if enableSleep then
+        if press then
+            sleepTicks = 0
+            isSleeping = false
+        else
+            sleepTicks = sleepTicks + 1
+            if sleepTicks > 600 then
+                isSleeping = true
+            end
+        end
+    else
+        sleepTicks = 0
+        isSleeping = false
+    end
+
     -- load theme from inputs
     for i = 1, 9 do
-        local row = math.ceil(i/3)
-        local col = (i-1)%3+1
-        local value = input.getNumber(i+23)
+        local row = math.ceil(i / 3)
+        local col = (i - 1) % 3 + 1
+        local value = input.getNumber(i + 23)
         if value ~= 0 then
             if not theme[row] then theme[row] = {} end
             theme[row][col] = value
@@ -105,20 +125,22 @@ function onTick()
         end
     end
 
+    if not isSleeping then
     --app switcher
-    apps = {10, 22, 36, 51, 66, 84}
-    for index, x in pairs(apps) do
-        if isPointInRectangle(x, 0, 13, 14) then
-            app = index-1
+        apps = {10, 22, 36, 51, 66, 84}
+        for index, x in pairs(apps) do
+            if isPointInRectangle(x, 0, 13, 14) then
+                app = index-1
+            end
         end
-    end
 
-    --tow ones
-    if towConnected and app == 0 and isPointInRectangle(85, 43, 8, 8) then
-        app = 6 --tow
-    end
-    if towConnected and app == 0 and isPointInRectangle(85, 53, 8, 8) then
-        app = 7 --camera
+        --tow ones
+        if towConnected and app == 0 and isPointInRectangle(85, 43, 8, 8) then
+            app = 6 --tow
+        end
+        if towConnected and app == 0 and isPointInRectangle(85, 53, 8, 8) then
+            app = 7 --camera
+        end
     end
 
     --delays
@@ -150,7 +172,7 @@ function onTick()
 end
 
 function onDraw()
-    if not acc then return end
+    if not acc or isSleeping then return end
 
     -- draw background gradient
     -- this is the most expensive fucking thing in the entire OS

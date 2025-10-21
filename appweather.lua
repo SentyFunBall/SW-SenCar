@@ -55,10 +55,13 @@ local conditions = "Sunny"
 local showInfo = false
 local color = {133, 197, 230}
 
+local sleepTicks = 0
+local isSleeping = false
+
 function onTick()
     acc = input.getBool(1)
     app = input.getNumber(3)
-    units = input.getBool(32)
+    local units = input.getBool(32)
 
     touchX = input.getNumber(1)
     touchY = input.getNumber(2)
@@ -68,6 +71,24 @@ function onTick()
     fog = input.getNumber(7)
     clock = input.getNumber(8)
     temp = input.getNumber(9)
+
+    local enableSleep = not input.getBool(5) -- NOT because settings output is inverted (WHY)
+
+    -- sleep management
+    if enableSleep then
+        if press > 0 then
+            sleepTicks = 0
+            isSleeping = false
+        else
+            sleepTicks = sleepTicks + 1
+            if sleepTicks > 600 then
+                isSleeping = true
+            end
+        end
+    else
+        sleepTicks = 0
+        isSleeping = false
+    end
 
     -- load from inputs
     for i = 1, 9 do
@@ -80,7 +101,7 @@ function onTick()
         end
     end
 
-    if app == 1 then --weather
+    if app == 1 and not isSleeping then --weather
         maxScroll = open and 155 or 100 --adjust max scroll if dropdown is open
         scrollPixels = math.min(scrollPixels, maxScroll - 64)
 
@@ -140,7 +161,7 @@ function onTick()
 end
 
 function onDraw()
-    if not acc or app ~= 1 then return end
+    if not acc or app ~= 1 or isSleeping then return end
 ----------[[* MAIN OVERLAY *]]--
     c(table.unpack(color))
     screen.drawRectF(0, 0, 96, 64)
@@ -162,9 +183,9 @@ function onDraw()
     c(theme[1][1], theme[1][2], theme[1][3], 250)
     screen.drawRectF(0, 15, 13, 64)
 
-    if zoomin then c(150,150,150) else c(170, 170, 170)end
+    if scrollUp then c(150,150,150) else c(170, 170, 170)end
     drawRoundedRect(1, 19, 10, 18)
-    if zoomout then c(150,150,150) else c(170, 170, 170)end
+    if scrollDown then c(150,150,150) else c(170, 170, 170)end
     drawRoundedRect(1, 40, 10, 18)
     c(100,100,100)
     screen.drawTriangleF(3, 29, 6, 25, 10, 29)

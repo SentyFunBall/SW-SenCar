@@ -49,22 +49,25 @@ end
 -- try require("Folder.Filename") to include code from another file in this, so you can store code in libraries
 -- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
 
-SENCAR_VERSION = "5.dev"
-SENCAR_VERSION_BUILD = "1018242045e"
-APP_VERSIONS = {MAP = "1111241830b", INFO = "1111241708b", WEATHER = "1111241832b", CAR = "1111241818b", SETTINGS = "1111241654b"}
+local SENCAR_VERSION = "6.dev"
+local SENCAR_VERSION_BUILD = "1020252157b"
+local APP_VERSIONS = {MAP = "1020252157b", INFO = "1020252157b", WEATHER = "1020252157b", CAR = "1020252157b", SETTINGS = "1020252157b"}
 
-theme = {}
+local theme = { { 47, 51, 78 }, { 86, 67, 143 }, { 128, 95, 164 } }
 
-scrollPixels = 0
-showInfo = false
-maxScroll = 0
+local scrollPixels = 0
+local showInfo = false
+local maxScroll = 0
+local carName = property.getText("Car name")
+
+local sleepTicks = 0
+local isSleeping = false
 
 function onTick()
     acc = input.getBool(1)
     app = input.getNumber(3)
 
     units = input.getBool(32)
-    carname = property.getText("Car name")
     odometer = input.getNumber(4)
     econ = input.getNumber(5)
     avsp = input.getNumber(6)
@@ -75,17 +78,24 @@ function onTick()
     touchY = input.getNumber(2)
     press = input.getBool(3) and press + 1 or 0
 
-    --input theme
-    for i = 1, 9 do
-        row = math.ceil(i/3)
-        if not theme[row] then theme[row] = {} end
-        theme[row][(i-1)%3+1] = input.getNumber(i+23)
-    end
-    if theme[1][1] == 0 then --fallback
-        theme = {{47,51,78}, {86,67,143}, {128,95,164}}
+    local enableSleep = not input.getBool(5) -- NOT because settings output is inverted (WHY)
+
+    if enableSleep then
+        if press > 0 then
+            sleepTicks = 0
+            isSleeping = false
+        else
+            sleepTicks = sleepTicks + 1
+            if sleepTicks > 600 then
+                isSleeping = true
+            end
+        end
+    else
+        sleepTicks = 0
+        isSleeping = false
     end
 
-    if app == 3 then --info
+    if app == 3 and not isSleeping then --info
         maxScroll = showInfo and 260 or 140 --adjust max scroll if info button is on
         scrollPixels = math.min(scrollPixels, maxScroll - 64)
 
@@ -106,55 +116,54 @@ function onTick()
 end
 
 function onDraw()
-    if acc and app == 3 then
+    if not acc or app ~= 3 or isSleeping then return end
 ----------[[* MAIN OVERLAY *]]--
-        c(70, 70, 70)
-        screen.drawRectF(0, 0, 96, 64)
+    c(70, 70, 70)
+    screen.drawRectF(0, 0, 96, 64)
 
-        hcolor = {theme[2][1]+25, theme[2][2]+25, theme[2][3]+25}
-        rcolor = theme[3]
-        tcolor = theme[1]
+    local hcolor = {theme[2][1]+25, theme[2][2]+25, theme[2][3]+25}
+    local rcolor = theme[3]
+    local tcolor = theme[1]
 
-        drawInfo(15, 16-scrollPixels, "Car name", carname, hcolor, rcolor, tcolor)
-        if units then
-            drawInfo(15, 34-scrollPixels, "Distance Driven", ("%.1fmi"):format(odometer), hcolor, rcolor, tcolor)
-            drawInfo(15, 52-scrollPixels, "Dist this trip", ("%.1fmi"):format(dist), hcolor, rcolor, tcolor)
-            drawInfo(15, 70-scrollPixels, "Fuel Economy", ("%.1fmpg"):format(econ), hcolor, rcolor, tcolor)
-            drawInfo(15, 88-scrollPixels, "Fuel used", ("%.1fgal"):format(fuelUsed), hcolor, rcolor, tcolor)
-            drawInfo(15, 106-scrollPixels, "Average Speed", ("%.1fmph"):format(avsp), hcolor, rcolor, tcolor)
-        else
-            drawInfo(15, 34-scrollPixels, "Distance Driven", ("%.1fkm"):format(odometer), hcolor, rcolor, tcolor)
-            drawInfo(15, 52-scrollPixels, "Dist this trip", ("%.1fkm"):format(dist), hcolor, rcolor, tcolor)
-            drawInfo(15, 70-scrollPixels, "Fuel Economy", ("%.1fL/100km"):format(econ), hcolor, rcolor, tcolor)
-            drawInfo(15, 88-scrollPixels, "Fuel used", ("%.1fL"):format(fuelUsed), hcolor, rcolor, tcolor)
-            drawInfo(15, 106-scrollPixels, "Average Speed", ("%.1fkmh"):format(avsp), hcolor, rcolor, tcolor)
-        end
+    drawInfo(15, 16-scrollPixels, "Car name", carName, hcolor, rcolor, tcolor)
+    if units then
+        drawInfo(15, 34-scrollPixels, "Distance Driven", ("%.1fmi"):format(odometer), hcolor, rcolor, tcolor)
+        drawInfo(15, 52-scrollPixels, "Dist this trip", ("%.1fmi"):format(dist), hcolor, rcolor, tcolor)
+        drawInfo(15, 70-scrollPixels, "Fuel Economy", ("%.1fmpg"):format(econ), hcolor, rcolor, tcolor)
+        drawInfo(15, 88-scrollPixels, "Fuel used", ("%.1fgal"):format(fuelUsed), hcolor, rcolor, tcolor)
+        drawInfo(15, 106-scrollPixels, "Average Speed", ("%.1fmph"):format(avsp), hcolor, rcolor, tcolor)
+    else
+        drawInfo(15, 34-scrollPixels, "Distance Driven", ("%.1fkm"):format(odometer), hcolor, rcolor, tcolor)
+        drawInfo(15, 52-scrollPixels, "Dist this trip", ("%.1fkm"):format(dist), hcolor, rcolor, tcolor)
+        drawInfo(15, 70-scrollPixels, "Fuel Economy", ("%.1fL/100km"):format(econ), hcolor, rcolor, tcolor)
+        drawInfo(15, 88-scrollPixels, "Fuel used", ("%.1fL"):format(fuelUsed), hcolor, rcolor, tcolor)
+        drawInfo(15, 106-scrollPixels, "Average Speed", ("%.1fkmh"):format(avsp), hcolor, rcolor, tcolor)
+    end
 
-        c(100, 100, 100)
-        screen.drawLine(15, 124-scrollPixels, 80, 124-scrollPixels)
-        drawFullToggle(15, 128-scrollPixels, showInfo, "Show OS info", rcolor, tcolor)
-        if showInfo then
-            drawInfo(15, 140-scrollPixels, "OS version", SENCAR_VERSION, hcolor, rcolor, tcolor)
-            drawInfo(15, 157-scrollPixels, "os build number", SENCAR_VERSION_BUILD, hcolor, rcolor, tcolor)
-            drawInfo(15, 174-scrollPixels, "map app build", APP_VERSIONS.MAP, hcolor, rcolor, tcolor)
-            drawInfo(15, 191-scrollPixels, "info app build", APP_VERSIONS.INFO, hcolor, rcolor, tcolor)
-            drawInfo(15, 208-scrollPixels, "wther app build", APP_VERSIONS.WEATHER, hcolor, rcolor, tcolor)
-            drawInfo(15, 225-scrollPixels, "car app build", APP_VERSIONS.CAR, hcolor, rcolor, tcolor)
-            drawInfo(15, 243-scrollPixels, "stting app build", APP_VERSIONS.SETTINGS, hcolor, rcolor, tcolor)
-        end
+    c(100, 100, 100)
+    screen.drawLine(15, 124-scrollPixels, 80, 124-scrollPixels)
+    drawFullToggle(15, 128-scrollPixels, showInfo, "Show OS info", rcolor, tcolor)
+    if showInfo then
+        drawInfo(15, 140-scrollPixels, "OS version", SENCAR_VERSION, hcolor, rcolor, tcolor)
+        drawInfo(15, 157-scrollPixels, "os build number", SENCAR_VERSION_BUILD, hcolor, rcolor, tcolor)
+        drawInfo(15, 174-scrollPixels, "map app build", APP_VERSIONS.MAP, hcolor, rcolor, tcolor)
+        drawInfo(15, 191-scrollPixels, "info app build", APP_VERSIONS.INFO, hcolor, rcolor, tcolor)
+        drawInfo(15, 208-scrollPixels, "wther app build", APP_VERSIONS.WEATHER, hcolor, rcolor, tcolor)
+        drawInfo(15, 225-scrollPixels, "car app build", APP_VERSIONS.CAR, hcolor, rcolor, tcolor)
+        drawInfo(15, 243-scrollPixels, "stting app build", APP_VERSIONS.SETTINGS, hcolor, rcolor, tcolor)
+    end
 
 ----------[[* CONTROLS OVERLAY *]]--
-        c(theme[1][1], theme[1][2], theme[1][3], 250)
-        screen.drawRectF(0, 15, 13, 64)
+    c(theme[1][1], theme[1][2], theme[1][3], 250)
+    screen.drawRectF(0, 15, 13, 64)
 
-        if scrollUp then c(150,150,150) else c(170, 170, 170)end
-        drawRoundedRect(1, 19, 10, 18)
-        if scrollDown then c(150,150,150) else c(170, 170, 170)end
-        drawRoundedRect(1, 40, 10, 18)
-        c(100,100,100)
-        screen.drawTriangleF(3, 29, 6, 25, 10, 29)
-        screen.drawTriangleF(2, 48, 6, 53, 11, 48)
-    end
+    if scrollUp then c(150,150,150) else c(170, 170, 170)end
+    drawRoundedRect(1, 19, 10, 18)
+    if scrollDown then c(150,150,150) else c(170, 170, 170)end
+    drawRoundedRect(1, 40, 10, 18)
+    c(100,100,100)
+    screen.drawTriangleF(3, 29, 6, 25, 10, 29)
+    screen.drawTriangleF(2, 48, 6, 53, 11, 48)
 end
 
 function c(...) local _={...}

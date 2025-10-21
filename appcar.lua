@@ -53,6 +53,9 @@ local theme = { { 47, 51, 78 }, { 86, 67, 143 }, { 128, 95, 164 } }
 local scrollPixels = 0
 local maxScroll = 92
 
+local sleepTicks = 0
+local isSleeping = false
+
 local actions = {
     {"Hatch", false}, --cabin wall on echolodia5,2
     {"Back light", false}, --not sure what this is on other cars other than echolodia
@@ -65,13 +68,30 @@ local actions = {
 function onTick()
     acc = input.getBool(1)
     app = input.getNumber(3)
-    units = input.getBool(32)
 
     touchX = input.getNumber(1)
     touchY = input.getNumber(2)
     press = input.getBool(3) and press + 1 or 0
 
-    lock = input.getBool(4)
+    local lock = input.getBool(4)
+
+    local enableSleep = not input.getBool(5) -- NOT because settings output is inverted (WHY)
+
+    -- sleep logic
+    if enableSleep then
+        if press > 0 then
+            sleepTicks = 0
+            isSleeping = false
+        else
+            sleepTicks = sleepTicks + 1
+            if sleepTicks > 600 then
+                isSleeping = true
+            end
+        end
+    else
+        sleepTicks = 0
+        isSleeping = false
+    end
 
     -- load from inputs
     for i = 1, 9 do
@@ -84,7 +104,7 @@ function onTick()
         end
     end
 
-    if app == 4 then --car
+    if app == 4 and not isSleeping then --car
         scrollPixels = math.min(scrollPixels, maxScroll - 64)
 
         --scroll
@@ -98,17 +118,19 @@ function onTick()
         end
 
         --PROCESSING
-        for i = 1, #actions do
-            if not lock and press == 2 and isPointInRectangle(15, 15-scrollPixels+i*11, 80, 8) then
-                actions[i][2] = not actions[i][2]
+        if not lock then
+            for i = 1, #actions do
+                if press == 2 and isPointInRectangle(15, 15-scrollPixels+i*11, 80, 8) then
+                    actions[i][2] = not actions[i][2]
+                end
+                output.setBool(i+3, actions[i][2])
             end
-            output.setBool(i+3, actions[i][2])
         end
     end
 end
 
 function onDraw()
-    if not acc or app ~= 4 then return end
+    if not acc or app ~= 4 or isSleeping then return end
 ----------[[* MAIN OVERLAY *]]--
     c(70, 70, 70)
     screen.drawRectF(0, 0, 96, 64)

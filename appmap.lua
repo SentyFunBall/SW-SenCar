@@ -61,6 +61,9 @@ local oldMapX, oldMapY = 0, 0
 local movingMap = false
 local focus = true
 
+local sleepTicks = 0
+local isSleeping = false
+
 function onTick()
     acc = input.getBool(1)
     app = input.getNumber(3)
@@ -70,9 +73,27 @@ function onTick()
     touchY = input.getNumber(2)
     press = input.getBool(3) and press + 1 or 0
 
-    x = input.getNumber(4)
-    y = input.getNumber(5)
+    local x = input.getNumber(4)
+    local y = input.getNumber(5)
     compass = input.getNumber(6)*(math.pi*2)
+
+    local enableSleep = not input.getBool(5) -- NOT because settings output is inverted (WHY)
+
+    -- sleep logic
+    if enableSleep then
+        if press > 0 then
+            sleepTicks = 0
+            isSleeping = false
+        else
+            sleepTicks = sleepTicks + 1
+            if sleepTicks > 600 then
+                isSleeping = true
+            end
+        end
+    else
+        sleepTicks = 0
+        isSleeping = false
+    end
 
     -- load from inputs
     for i = 1, 9 do
@@ -85,8 +106,7 @@ function onTick()
         end
     end
 
-
-    if app == 2 then --maps
+    if app == 2 and not isSleeping then --maps
         if press > 0 and isPointInRectangle(0, 18, 12, 12) then zoom = clamp(zoom - 0.01 - press/800, 0.3, 25) zoomin = true else zoomin = false end --zoomin
         if press > 0 and isPointInRectangle(0, 30, 12, 12) then zoom = clamp(zoom + 0.01 + press/800, 0.3, 25) zoomout = true else zoomout = false end --zoomout
         if press > 0 and isPointInRectangle(0, 42, 12, 12) then zoom = 3 mapX, mapY = 0,0 focus, resetbtn, movingMap = true, true, false else resetbtn = false end --reset
@@ -111,7 +131,7 @@ function onTick()
 end
 
 function onDraw()
-    if not acc or app ~= 2 then return end
+    if not acc or app ~= 2 or isSleeping then return end
 
     ---[[* MAIN OVERLAY *]]---
     screen.drawMap(mapX, mapY, zoom)

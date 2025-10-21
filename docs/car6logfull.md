@@ -26,10 +26,13 @@
 - Added various new iconography in the dashboard
 - Added new always on display to the dashboard, which displays the time
 - If in EV mode, the car now uses a touchscreen based startup instead of button based.
+- If in EV mode, the dashboard has new iconography
+- Added new "MP Mode", which turns off touch-enabled displays when not being actively pressed
 
 ### Changes
 - Rebuilt theme engine from scratch to allow for much more customizable theme tuning
-- Optimizations and refactored code across the entire operating system
+- Optimizations and refactored code across the entire operating system, up to 40% performance increase in default settings
 - Replaced Low Battery indicator with ESC Off indicator
 - Reduced font size of Drive Mode text
 - Slightly adjusted gradients
+- Fixed various issues related to touch inputs or misnamed variables
