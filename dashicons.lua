@@ -44,16 +44,16 @@ end
 -- try require("Folder.Filename") to include code from another file in this, so you can store code in libraries
 -- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
 
-theme = {}
-warning = false
-ticks = 0
-fuelCollected = false
-maxfuel = 180
+local theme = {}
+local warning = false
+local ticks = 0
+local fuelCollected = false
+local maxfuel = 180
+local fuelwarn = property.getNumber("Fuel Warn %")/100
+local tempwarn = property.getNumber("Temp Warn")
+local isEv = property.getBool("EV Mode (Do not change)")
 
 function onTick()
-    fuelwarn = property.getNumber("Fuel Warn %")/100
-    tempwarn = property.getNumber("Temp Warn")
-
     leftBlinker = input.getBool(1)
     rightBlinker = input.getBool(2)
     fl = input.getBool(4)
@@ -68,6 +68,8 @@ function onTick()
     temp = input.getNumber(2)
     lightmode = input.getNumber(3)
     cruisemode = input.getNumber(4)
+
+    lock = not input.getBool(3)
 
     --input theme
     for i = 1, 9 do
@@ -88,7 +90,11 @@ function onTick()
         ticks = 0
     end
 
-    if fuel/maxfuel < fuelwarn or temp > tempwarn or otherWarning then
+    if not isEv and (fuel/maxfuel < fuelwarn or temp > tempwarn) then
+        warning = true
+    elseif isEv and (fuel < 1) then 
+        warning = true
+    elseif otherWarning then
         warning = true
     else
         warning = false
@@ -214,6 +220,14 @@ function onDraw()
         if rr then
             screen.drawLine(54,21,51,18)
         end
+    end
+
+    if lock then
+        c(200,50,50)
+        screen.drawRectF(45,4,7,4)
+        screen.drawRectF(46,2,1,2)
+        screen.drawRectF(47,1,3,1)
+        screen.drawRectF(50,2,1,3)
     end
 end
 

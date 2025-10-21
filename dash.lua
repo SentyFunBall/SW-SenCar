@@ -102,9 +102,9 @@ function onTick()
     --kill me
     info.speed = input.getNumber(1)
     info.gear = input.getNumber(2) -- p, r, n, (1, 2, 3, 4, 5)
-    info.rps = input.getNumber(3)
-    info.fuel = input.getNumber(4)
-    info.temp = input.getNumber(5)
+    info.rps = input.getNumber(3) -- battery usage on EVs
+    info.fuel = input.getNumber(4) -- battery for EVs
+    info.temp = input.getNumber(5) -- gen power production on EVs
     info.gpsX = input.getNumber(6)
     info.gpsY = input.getNumber(7)
     info.compass = input.getNumber(8)*(math.pi*2)
@@ -263,8 +263,14 @@ function onDraw()
         drawCircle(80, 16, 10, 8, 60, dialStart, math.min(info.rps / (info.properties.upshift + 5), 1) * 230 * oneDeg) --rps
 
         c(theme[3][1], theme[3][2], theme[3][3])
-        drawCircle(16, 16, 15, 13, 60, outStart, math.min(info.fuel / info.properties.maxfuel, 1) * 120 * oneDeg) --fuel, should clamp within fuel we got in 20th tick as max fuel
-        drawCircle(80, 16, 15, 13, 60, outStart, math.min(info.temp / 110, 1) * 120 * oneDeg, -1) --temp, clamps within -inf and 120
+
+        if info.properties.ev then
+            drawCircle(16, 16, 15, 13, 60, outStart, info.fuel * 120 * oneDeg) --battery
+            drawCircle(80, 16, 15, 13, 60, outStart, math.min(info.temp / 25, 1) * 120 * oneDeg, -1) --gen power production
+        else
+            drawCircle(16, 16, 15, 13, 60, outStart, math.min(info.fuel / info.properties.maxfuel, 1) * 120 * oneDeg) --fuel, should clamp within fuel we got in 20th tick as max fuel
+            drawCircle(80, 16, 15, 13, 60, outStart, math.min(info.temp / 110, 1) * 120 * oneDeg, -1) --temp, clamps within -inf and 120
+        end
 
         --text
         -- speed

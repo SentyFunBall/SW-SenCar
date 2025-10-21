@@ -20,14 +20,16 @@
 
 ## Lua
 ### New
-- Added theme RGB cycle mode in Settings app
-- Added theme hue adjustment in Settings app
-- Added gradient resolution slider in Settings app
-- Added various new iconography in the dashboard
+- Added Theme RGB cycle mode in Settings app
+- Added Theme Hue adjustment in Settings app
+- Added Gradient Resolution slider in Settings app
+- Added various new iconography on the dashboard
 - Added new always on display to the dashboard, which displays the time
 - If in EV mode, the car now uses a touchscreen based startup instead of button based.
-- If in EV mode, the dashboard has new iconography
+- If in EV mode, the dashboard has new EV-specific iconography
 - Added new "MP Mode", which turns off touch-enabled displays when not being actively pressed
+- New "Locked" dashboard icon (If equipped)
+- If the vehicle is locked (if equipped), the OS can be started but settings cannot be changes
 
 ### Changes
 - Rebuilt theme engine from scratch to allow for much more customizable theme tuning

@@ -110,9 +110,9 @@ end
 
 function onDraw()
     if acc then
-        for i = 1, 97 do
-            c(lerp(theme[1][1], theme[2][1], i/96), lerp(theme[1][2], theme[2][2], i/96), lerp(theme[1][3], theme[2][3], i/96))
-            screen.drawLine(i-1, 0, i-1, 32)
+        for i = 1, 32 do
+            c(lerp(theme[1][1], theme[2][1], i/32), lerp(theme[1][2], theme[2][2], i/32), lerp(theme[1][3], theme[2][3], i/32))
+            screen.drawRectF((i * 3)-3, 0, 3, 32)
         end
         
         weatherWidget = WidgetAPI.draw(1, true, weatherWidget, {theme[2][1]+15, theme[2][2]+15, theme[2][3]+15})

@@ -74,7 +74,7 @@ local isSleeping = false
 function onTick()
     acc = input.getBool(1)
     exist = input.getBool(2)
-    towConnected = input.getBool(4) -- note that MC has NOT from the connection
+    towConnected = input.getBool(6) -- note that MC has NOT from the connection
 
     local press = input.getBool(3)
     touchX = input.getNumber(1)

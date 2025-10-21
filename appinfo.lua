@@ -95,6 +95,17 @@ function onTick()
         isSleeping = false
     end
 
+    -- load from inputs
+    for i = 1, 9 do
+        local row = math.ceil(i/3)
+        local col = (i-1)%3+1
+        local value = input.getNumber(i+23)
+        if value ~= 0 then
+            if not theme[row] then theme[row] = {} end
+            theme[row][col] = value
+        end
+    end
+
     if app == 3 and not isSleeping then --info
         maxScroll = showInfo and 260 or 140 --adjust max scroll if info button is on
         scrollPixels = math.min(scrollPixels, maxScroll - 64)

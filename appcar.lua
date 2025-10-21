@@ -73,7 +73,7 @@ function onTick()
     touchY = input.getNumber(2)
     press = input.getBool(3) and press + 1 or 0
 
-    local lock = input.getBool(4)
+    local lock = not input.getBool(4)
 
     local enableSleep = not input.getBool(5) -- NOT because settings output is inverted (WHY)
 

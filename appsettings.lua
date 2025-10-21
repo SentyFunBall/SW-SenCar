@@ -83,7 +83,7 @@ local actions = { --action {"name", state, type (0=toggle,1=dropdown,2=slider), 
     { "RGB Mode",     false, 0 },
     { "Mp Mode", false, 0},
     { "Hue adjust",  0,     2, { n = -180, m = 180, v = 0, s = 1 } },
-    { "Gradient Res",0,     2, { n = 1, m = 9, v = 3, s = 0.1} },
+    { "Gradient Res",0,     2, { n = 1, m = 9, v = 6, s = 0.1} },
     { "Theme",       0,     1, themes},
 }
 local actionHeightOffsets = {}
@@ -120,7 +120,7 @@ function onTick()
     touchY = input.getNumber(2)
     press = input.getBool(3) and press + 1 or 0
 
-    local lock = input.getBool(4)
+    local lock = not input.getBool(4)
 
     local enableSleep = actions[5][2]
 
@@ -220,7 +220,7 @@ function onTick()
     for i = 1, 5 do
         output.setBool(i, not actions[i][2])
     end
-    output.setNumber(1, math.floor(actions[7][4].v))
+    output.setNumber(1, math.floor(9 - actions[7][4].v))
     channel = 24
     for i = 1, 3 do
         for j = 1, 3 do
