@@ -74,7 +74,7 @@ local isSleeping = false
 function onTick()
     acc = input.getBool(1)
     exist = input.getBool(2)
-    towConnected = input.getBool(6) -- note that MC has NOT from the connection
+    towConnected = input.getBool(7) -- note that MC has NOT from the connection
 
     local press = input.getBool(3)
     touchX = input.getNumber(1)
@@ -82,6 +82,8 @@ function onTick()
 
     local clock = input.getNumber(3)
     gradientResolution = clamp(input.getNumber(4), 1, 9)
+
+    useDimDisplay = input.getBool(6)
 
     local enableSleep = not input.getBool(5) -- NOT because settings output is inverted (WHY)
 
@@ -355,10 +357,16 @@ function onDraw()
     screen.drawRectF(0,0,96,64)
 
     if tick2 >= 0 then
-        name = not exist and "" or appNames[app+1]
+        name = not exist and "" or appNames[app + 1]
         drawLogo(clamp(tick2, 0, 255), name)
-        c(100,100,100,220)
+        c(100, 100, 100, 220)
         screen.drawText(1, 58, ver)
+    end
+    
+    -- dim display if needed
+    if useDimDisplay then
+        c(0,0,0,180)
+        screen.drawRectF(0,0,96,64)
     end
 end
 

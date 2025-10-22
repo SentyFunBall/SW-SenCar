@@ -112,9 +112,11 @@ function onTick()
 
     touchX = input.getNumber(10)
     touchY = input.getNumber(11)
-    touch = input.getBool(2)
+    local touch = input.getBool(2)
 
-    clock = input.getNumber(13)
+    useDimDisplay = input.getBool(6)
+
+    local clock = input.getNumber(13)
 
     if clock ~= lastClock then
         lastClock = clock
@@ -319,7 +321,11 @@ function onDraw()
         else
             dst(info.properties.trans and 73 or 74, 20, info.properties.trans and "auto" or "man")
         end
-        --dst(76, 1, "rps", 0.8)
+
+        if useDimDisplay then
+            screen.setColor(0, 0, 0, 150)
+            screen.drawRectF(0, 0, 100, 32)
+        end
     elseif not acc then
         c(100, 100, 100)
         dst(40, 10, clockstr)

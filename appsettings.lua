@@ -77,14 +77,16 @@ local themes = {
 }
 
 local actions = { --action {"name", state, type (0=toggle,1=dropdown,2=slider), isShow, extra}
-    { "Metric",      false, 0 },
-    { "Manual",      false, 0 },
-    { "ESC Off",     false, 0 },
-    { "RGB Mode",     false, 0 },
-    { "Mp Mode", false, 0},
-    { "Hue adjust",  0,     2, { n = -180, m = 180, v = 0, s = 1 } },
-    { "Gradient Res",0,     2, { n = 1, m = 9, v = 6, s = 0.1} },
-    { "Theme",       0,     1, themes},
+    { "Metric",       false,                                 0 },
+    { "Manual",       false,                                 0 },
+    { "ESC Off",      false,                                 0 },
+    { "RGB Mode",     false,                                 0 },
+    { "Mp Mode",      false,                                 0 },
+    { "Hue adjust",   0,                                     2, { n = -180, m = 180, v = 0, s = 1 } },
+    { "Gradient Res", 0,                                     2, { n = 1, m = 9, v = 6, s = 0.1 } },
+    { "Theme",        0,                                     1, themes },
+    { "Dark Mode",    false,                                 0 },
+    { "SenConnect",   property.getBool("Enable SenConnect"), 0 },
 }
 local actionHeightOffsets = {}
 local total = 0
@@ -141,7 +143,7 @@ function onTick()
     end
 
     if app == 5 and not isSleeping then --die
-        maxScroll = open and 187 or 131 --adjust max scroll if dropdown is open
+        maxScroll = open and 189 or 153 --adjust max scroll if dropdown is open
         scrollPixels = math.min(scrollPixels, maxScroll - 64)
 
         --scroll
@@ -163,7 +165,7 @@ function onTick()
                     goto continue -- do nothing, out of view
                 end
 
-                if action[3] == 0 and press == 2 and isPointInRectangle(14, toggleScrollable, 80, 8) then --toggle
+                if action[3] == 0 and press == 1 and not open and isPointInRectangle(14, toggleScrollable, 80, 8) then --toggle
                     action[2] = not action[2]
                 elseif action[3] == 1 and press == 2 then                                                 --dropdown
                     if isPointInRectangle(14, scrollable, 80, 8) then
@@ -179,7 +181,7 @@ function onTick()
                             open = false
                         end
                     end
-                elseif action[3] == 2 and press > 1 then --slider
+                elseif action[3] == 2 and press > 1 and not open then --slider
                     --down
                     if isPointInRectangle(14, scrollable, 8, 8) then
                         action[4].v = clamp(action[4].v - action[4].s, action[4].n, action[4].m)
@@ -220,6 +222,9 @@ function onTick()
     for i = 1, 5 do
         output.setBool(i, not actions[i][2])
     end
+    output.setBool(6, actions[9][2])
+    output.setBool(7, actions[10][2])
+
     output.setNumber(1, math.floor(9 - actions[7][4].v))
     channel = 24
     for i = 1, 3 do
@@ -243,15 +248,23 @@ function onDraw()
     scrollable = 23 - scrollPixels
     screen.drawLine(15, scrollable, 80, scrollable)
 
-    --draw each action
+    -- first pass: draw all non-dropdown elements and closed dropdowns
     for i, action in pairs(actions) do
         scrollable = 15 - scrollPixels + actionHeightOffsets[i]
         if action[3] == 0 then     --toggle
             drawFullToggle(15, scrollable, action[2], action[1], theme[3], theme[1])
-        elseif action[3] == 1 then --dropdown
-            drawDropdown(15, scrollable, open, action[1], action[4], theme, theme[3], theme[1])
+        elseif action[3] == 1 and not open then --dropdown (closed only)
+            drawDropdown(15, scrollable, false, action[1], action[4], theme, theme[3], theme[1])
         elseif action[3] == 2 then --slider
             drawSlider(15, scrollable - 8, action[1], action[4].v, action[4].n, action[4].m, theme[3], theme[1])
+        end
+    end
+
+    -- second pass: draw open dropdowns on top
+    for i, action in pairs(actions) do
+        if action[3] == 1 and open then --dropdown (open only)
+            scrollable = 15 - scrollPixels + actionHeightOffsets[i]
+            drawDropdown(15, scrollable, true, action[1], action[4], theme, theme[3], theme[1])
         end
     end
 

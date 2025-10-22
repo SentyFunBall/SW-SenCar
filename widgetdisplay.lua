@@ -47,16 +47,16 @@ end
 -- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
 require("APIs.WidgetAPI")
 
-theme = {}
+local theme = { { 47, 51, 78 }, { 86, 67, 143 }, { 128, 95, 164 } }
 
 --myWidget = {id = 0, drawn = false, {content = "Batt", x = 0, y = 0, [h = false, color = {100, 100, 100}]}, {content = 0, x = 0, y = 6, [h = false, color = {10, 10, 10}]}
-batteryWidget = {id = 0, drawn = false, 
+local batteryWidget = {id = 0, drawn = false, 
     {content = "Batt", x = 1, y = 1, h = false, color = {200, 200, 200}}, 
     {content = 0, x = 1, y = 8, h = false, color = {105, 190, 124}},
     {content = 0, x = 1, y = 14, h = false, color = {105, 190, 124}}
 }
 
-weatherWidget = {id = 1, drawn = false, 
+local weatherWidget = {id = 1, drawn = false, 
     {content = "Weather", x = 1, y = 1, h = false, color = {200, 200, 200}},
     {content = 0, x = 1, y = 8, h = false, color = {105, 190, 104}},
     {content = 0, x = 1, y = 14, h = false, color = {105, 190, 104}},
@@ -69,19 +69,22 @@ function onTick()
     acc = input.getBool(1)
     exist = input.getBool(2)
 
-    units = input.getBool(32)
+    local units = input.getBool(32)
     battery = string.format("%.1f", input.getNumber(1)*100)
     battDelta = string.format("%.3f", input.getNumber(2)*-1000)
-    rain = input.getNumber(4)
+    local rain = input.getNumber(4)
 
-    --input theme
+    useDimDisplay = input.getBool(31)
+
+    -- load from inputs
     for i = 1, 9 do
-        row = math.ceil(i/3)
-        if not theme[row] then theme[row] = {} end
-        theme[row][(i-1)%3+1] = input.getNumber(i+23)
-    end
-    if theme[1][1] == 0 then --fallback
-        theme = {{47,51,78}, {86,67,143}, {128,95,164}}
+        local row = math.ceil(i/3)
+        local col = (i-1)%3+1
+        local value = input.getNumber(i+23)
+        if value ~= 0 then
+            if not theme[row] then theme[row] = {} end
+            theme[row][col] = value
+        end
     end
 
     if units then
@@ -109,18 +112,24 @@ function onTick()
 end
 
 function onDraw()
-    if acc then
-        for i = 1, 32 do
-            c(lerp(theme[1][1], theme[2][1], i/32), lerp(theme[1][2], theme[2][2], i/32), lerp(theme[1][3], theme[2][3], i/32))
-            screen.drawRectF((i * 3)-3, 0, 3, 32)
-        end
-        
-        weatherWidget = WidgetAPI.draw(1, true, weatherWidget, {theme[2][1]+15, theme[2][2]+15, theme[2][3]+15})
-        batteryWidget = WidgetAPI.draw(3, false, batteryWidget, {theme[2][1]+15, theme[2][2]+15, theme[2][3]+15})
-        
-        c(0,0,0,lerp(255, 1, tick))
-        screen.drawRectF(0,0,96,32)
+    if not acc then return end
+
+    for i = 1, 32 do
+        c(lerp(theme[1][1], theme[2][1], i/32), lerp(theme[1][2], theme[2][2], i/32), lerp(theme[1][3], theme[2][3], i/32))
+        screen.drawRectF((i * 3)-3, 0, 3, 32)
     end
+    
+    weatherWidget = WidgetAPI.draw(1, true, weatherWidget, {theme[2][1]+15, theme[2][2]+15, theme[2][3]+15})
+    batteryWidget = WidgetAPI.draw(3, false, batteryWidget, {theme[2][1]+15, theme[2][2]+15, theme[2][3]+15})
+    
+    c(0,0,0,lerp(255, 1, tick))
+    screen.drawRectF(0, 0, 96, 32)
+    
+    if useDimDisplay then
+        screen.setColor(0, 0, 0, 150)
+        screen.drawRectF(0, 0, 96, 32)
+    end
+    
 end
 
 function c(...) local _={...}

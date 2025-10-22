@@ -67,6 +67,8 @@ function onTick()
     local isPressed = input.getBool(4)
     connected = input.getBool(5)
 
+    useDimDisplay = input.getBool(30)
+
     local enableSleep = not input.getBool(31) -- NOT because settings output is inverted (WHY)
 
     -- load from inputs
@@ -254,7 +256,12 @@ function onDraw()
     end
 
     c(0,0,0,lerp(255, 1, tick))
-    screen.drawRectF(0,0,32,32)
+    screen.drawRectF(0, 0, 32, 32)
+
+    if useDimDisplay then
+        screen.setColor(0, 0, 0, 150)
+        screen.drawRectF(0, 0, 32, 32)
+    end
 end
 
 function c(...) local _={...}
