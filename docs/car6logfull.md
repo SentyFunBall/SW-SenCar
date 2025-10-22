@@ -2,10 +2,10 @@
 
 ## Microcontroller
 ### New
-- Added trailer reverse camera (SenCar 6 Max only)
+- Added trailer reverse camera (If equipped)
 - Added tow connector node
 - Added anti-piracy measures to MC
-- Added Adaptive Cruise Control as a Cruise Control mode if Jupyter Radar Driver is installed and connected to SenCar 6 Extras MC
+- Added Adaptive Cruise Control as a Cruise Control mode if Jupyter Radar Driver is equipped
 - Added EV Mode toggle, which changes several settings
 - (Lua too) Added new lock protections to prevent the car from moving when locked (If equipped)
 - Added automatic headlights (SenCar 6 Max only)
@@ -16,7 +16,7 @@
 - Removed battery input
 - Replaced SenConnect composite input with property toggle - SenConnect can still be disabled from Settings (if equipped)
 - Changed how lights work - Now a cycle keybind is present to cycle through Off, Low Beams, and High Beams
-- Cruise Control cycle keyind now present to cycle through Off, Cruise Control, and Adaptive Cruise Control (ACC only appears if Mercury Radar Driver is installed and connected to SenCar 6 Extras MC)
+- Cruise Control cycle keyind now present to cycle through Off, Cruise Control, and Adaptive Cruise Control (If equipped)
 - Fixed issue with desynced touch inputs causing touch to appear at last location for a tick or two
 
 ## Lua
