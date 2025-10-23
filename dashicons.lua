@@ -34,6 +34,8 @@ do
         simulator:setInputBool(9, true)
         simulator:setInputBool(10, simulator:getIsToggled(1))
         simulator:setInputBool(11, simulator:getIsToggled(2))
+
+        simulator:setProperty("Dash Layout", 1) -- 1 - SenCar 6, 2 - SenCar 5, 3 - Round, 4 - Modern
     end;
 end
 ---@endsection
@@ -52,6 +54,8 @@ local maxfuel = 180
 local fuelwarn = property.getNumber("Fuel Warn %")/100
 local tempwarn = property.getNumber("Temp Warn")
 local isEv = property.getBool("EV Mode (Do not change)")
+
+local dashMode = property.getNumber("Dash Layout")
 
 function onTick()
     leftBlinker = input.getBool(1)

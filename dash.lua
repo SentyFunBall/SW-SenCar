@@ -28,6 +28,7 @@ do
     simulator:setProperty("Car name", "SenCar 5 DEV")
     simulator:setProperty("Top Speed (m/s)", 66)
     simulator:setProperty("EV Mode (Do not change)", true)
+    simulator:setProperty("Dash Layout", 1) -- 1 - SenCar 6, 2 - SenCar 5, 3 - Round, 4 - Modern
 
     -- Runs every tick just before onTick; allows you to simulate the inputs changing
     ---@param simulator Simulator Use simulator:<function>() to set inputs etc.
@@ -43,16 +44,17 @@ do
         simulator:setInputNumber(4, screenConnection.touchY)]]
 
         -- NEW! button/slider options from the UI
-        simulator:setInputBool(1, false)
+        simulator:setInputBool(1, true)
         simulator:setInputBool(2, false)
-        simulator:setInputBool(32, false)
+        simulator:setInputBool(3, true)
+        simulator:setInputBool(32, true)
 
         local screenConnection = simulator:getTouchScreen(1)
         simulator:setInputNumber(1, simulator:getSlider(1)*100)
         simulator:setInputNumber(2, math.floor(simulator:getSlider(2) * 7))
         simulator:setInputNumber(3, simulator:getSlider(3)*25)
-        simulator:setInputNumber(4, simulator:getSlider(4)*181)
-        simulator:setInputNumber(5, simulator:getSlider(5)*200)
+        simulator:setInputNumber(4, simulator:getSlider(4))
+        simulator:setInputNumber(5, simulator:getSlider(5)*120)
         simulator:setInputNumber(8, simulator:getSlider(8))
         simulator:setInputNumber(9, simulator:getSlider(9))
         simulator:setInputNumber(10, screenConnection.touchX)
@@ -86,18 +88,18 @@ info.properties.upshift = property.getNumber("Upshift RPS")
 info.properties.downshift = property.getNumber("Downshift RPS")
 info.properties.topspeed = property.getNumber("Top Speed (m/s)")/100
 info.properties.ev = property.getBool("EV Mode (Do not change)")
+info.properties.trans = property.getBool("Transmission")
+info.properties.unit = property.getBool("Units")
+
 local usingSenconnect = property.getBool("Enable SenConnect") --disables map rendering, in favor of SenConnect's map
+
+local dashMode = property.getNumber("Dash Layout")
 
 function onTick()
     acc = input.getBool(1)
     exist = input.getBool(3)
     info.properties.unit = input.getBool(32)
     info.properties.trans = input.getBool(31) --peculiar property name
-    if info.properties.theme  == 0 then
-        info.properties.theme = property.getNumber("Theme")
-        info.properties.trans = property.getBool("Transmission")
-        info.properties.unit = property.getBool("Units")
-    end
 
     --kill me
     info.speed = input.getNumber(1)
@@ -140,10 +142,18 @@ function onTick()
     end
 
     --map zoom
-    if touch and isPointInRectangle(23, 26, 5, 5) then
-        mapZoom = math.min(mapZoom + 0.1, 5)
-    elseif touch and isPointInRectangle(67, 26, 5, 5) then
-        mapZoom = math.max(mapZoom - 0.1, 0.5)
+    if dashMode == 1 then
+        if touch and isPointInRectangle(26, 22, 5, 5) then
+            mapZoom = math.min(mapZoom + 0.1, 5)
+        elseif touch and isPointInRectangle(65, 22, 5, 5) then
+            mapZoom = math.max(mapZoom - 0.1, 0.5)
+        end
+    elseif dashMode == 2 then
+        if touch and isPointInRectangle(23, 26, 5, 5) then
+            mapZoom = math.min(mapZoom + 0.1, 5)
+        elseif touch and isPointInRectangle(67, 26, 5, 5) then
+            mapZoom = math.max(mapZoom - 0.1, 0.5)
+        end
     end
 
     mapZoom = mapZoom + (info.speed / info.properties.topspeed) * 0.1
@@ -162,169 +172,12 @@ end
 
 function onDraw()
     if exist then
-        if (not usingSenconnect) and info.gear ~= 1 then
-            --dont draw map or zoom btns if we're in reverse or if SC is connected (haha magic boolean)
-            --screenX, screenY = map.screenToMap(info.gpsX, info.gpsY, 2, 96, 32, 58, 25)
-            screen.drawMap(info.gpsX, info.gpsY, mapZoom)
-            --map icon
-            c(theme[3][1], theme[3][2], theme[3][3])
-            drawPointer(48,16,info.compass, 5)
-
-            --map zoom buttons
-            c(50, 50, 50)
-            screen.drawRectF(24, 28, 3, 1) --minus
-            screen.drawRectF(69, 27, 1, 3) --plus
-            screen.drawRectF(68, 28, 3, 1)
-        end
-
-        --side gradients
-        c(theme[1][1], theme[1][2], theme[1][3], 250)
-        screen.drawRectF(0, 0, 4, 32)
-        screen.drawRectF(92, 0, 4, 32)
-        for i=0, 42 do
-            c(theme[1][1], theme[1][2], theme[1][3], easeLerp(250, 50, i/42))
-            screen.drawLine(i+4, 0, i+4, 32)
-            screen.drawLine(96-i-5, 0, 96-i-5, 32)
-        end
-        
-        -- circles
-        c(theme[1][1], theme[1][2], theme[1][3],250) --i love tables
-        drawCircle(16, 16, 12, 0, 21, 0, pi2)
-        drawCircle(80, 16, 12, 0, 21, 0, pi2)
-
-        -- empty dials
-        local dialStart = -130/2*oneDeg --bunch of like cool math stuff
-        local dialEnd = 230*oneDeg
-        local outStart = 130/5*oneDeg
-        local outEnd = 120*oneDeg
-
-        c(theme[1][1]-15, theme[1][2]-15, theme[1][3]-15)
-        drawCircle(16, 16, 10, 8, 60, dialStart, dialEnd) --speed
-        drawCircle(80, 16, 10, 8, 60, dialStart, dialEnd) --rps
-        drawCircle(16, 16, 15, 13, 60, outStart, outEnd) --fuel
-        drawCircle(80, 16, 15, 13, 60, outStart, outEnd, -1) --temp
-
-        -- labels (credit to mrlennyn for the ui builder (fuck off copilot i thought i uninstalled you))
-        if info.properties.ev then
-            --- power usage
-            c(150, 150, 150)
-            screen.drawRectF(93,27,2,2)
-            screen.drawLine(93,29,91,31)
-            screen.drawRectF(91,27,2,1)
-            screen.drawRectF(92,26,2,1)
-            screen.drawRectF(93,25,2,1)
-        else
-        --- temp
-            if info.temp > info.properties.tempwarn then
-                c(150,50,50)
-            else
-                c(150,150,150)
-            end
-            screen.drawLine(90,30,95,30)
-            screen.drawLine(90,28,95,28)
-            screen.drawLine(92,24,92,28)
-            screen.drawRectF(93,24,1,1)
-            screen.drawRectF(93,26,1,1)
-        end
-
-        if info.properties.ev then
-            -- battery
-            c(150, 150, 150)
-            screen.drawRect(1, 27, 5, 3)
-            screen.drawRectF(7, 28, 1, 2)
-        else
-            --- fuel
-            if info.fuel / info.properties.maxfuel < info.properties.fuelwarn then
-                c(150, 50, 50)
-            else
-                c(150, 150, 150)
-            end
-            screen.drawRectF(1,29,3,2)
-            screen.drawRect(1,26,2,2)
-            screen.drawLine(5,27,5,31)
-            screen.drawRectF(4,29,1,1)
-            screen.drawRectF(4,26,1,1)
-        end
-
-        --- drive modes
-        c(theme[2][1], theme[2][2], theme[2][3])
-        if info.drivemode == 1 then --eco
-            dst(43,2,"Eco")
-        elseif info.drivemode == 2 then --sport
-            dst(39,2,"Sport")
-        elseif info.drivemode == 3 then --tow
-            dst(43,2,"Tow")
-        elseif info.drivemode == 4 then --dac
-            dst(43,2,"DAC")
-        end
-
-        -- dial that fills up
-        c(theme[2][1], theme[2][2], theme[2][3])
-        drawCircle(16, 16, 10, 8, 60, dialStart, math.min(info.speed / 100 / info.properties.topspeed, 1) * 230 * oneDeg) --speed
-        if info.rps>info.properties.upshift then c(180, 53, 35) else c(theme[2][1], theme[2][2], theme[2][3]) end
-        drawCircle(80, 16, 10, 8, 60, dialStart, math.min(info.rps / (info.properties.upshift + 5), 1) * 230 * oneDeg) --rps
-
-        c(theme[3][1], theme[3][2], theme[3][3])
-
-        if info.properties.ev then
-            drawCircle(16, 16, 15, 13, 60, outStart, info.fuel * 120 * oneDeg) --battery
-            drawCircle(80, 16, 15, 13, 60, outStart, math.min(info.temp / 25, 1) * 120 * oneDeg, -1) --gen power production
-        else
-            drawCircle(16, 16, 15, 13, 60, outStart, math.min(info.fuel / info.properties.maxfuel, 1) * 120 * oneDeg) --fuel, should clamp within fuel we got in 20th tick as max fuel
-            drawCircle(80, 16, 15, 13, 60, outStart, math.min(info.temp / 110, 1) * 120 * oneDeg, -1) --temp, clamps within -inf and 120
-        end
-
-        --text
-        -- speed
-        c(200,200,200)
-
-        local function drawSpeed(speed, unit, offset)
-            speed = string.format("%.0f", speed)
-            screen.drawText(offset, 12, speed)
-            c(150,150,150)
-            dst(11, 20, unit)
-        end
-
-        if info.properties.unit then
-            mph = math.floor(info.speed * 2.23)
-            offset = mph < 10 and 14 or mph < 100 and 12 or 9
-            drawSpeed(mph, "mph", offset)
-        else
-            kph = math.floor(info.speed * 3.6)
-            offset = kph < 10 and 14 or kph < 100 and 12 or 9
-            drawSpeed(kph, "kph", offset)
-        end
-
-        -- gear
-        c(200,200,200)
-        if info.gear == 0 then
-            dst(78,9,"P",2)
-        elseif info.gear == 1 then
-            dst(78,9,"R",2)
-        elseif info.gear == 2 then
-            dst(78,9,"N",2)
-        elseif info.gear >= 3 then
-            if info.properties.ev or info.properties.trans then
-                dst(info.properties.ev and 78 or 77, 9,"D",2)
-                if not info.properties.ev and info.properties.trans then
-                    dst(84,13,string.format("%.0f", info.gear-2))
-                end
-            else
-                dst(78,9,string.format("%.0f", info.gear-2),2)
-            end
-        end
-
-        -- units
-        c(150, 150, 150)
-        if info.properties.ev then
-            dst(75, 20, "PWR")
-        else
-            dst(info.properties.trans and 73 or 74, 20, info.properties.trans and "auto" or "man")
-        end
-
-        if useDimDisplay then
-            screen.setColor(0, 0, 0, 150)
-            screen.drawRectF(0, 0, 100, 32)
+        -- Heavily abusing LifeBoatAPI's ability to paste code from other files by require
+        -- The two dash files literally get pasted into this function
+        if dashMode == 1 then
+            require("dashes.car6")
+        elseif dashMode == 2 then
+            require("dashes.car5")
         end
     elseif not acc then
         c(100, 100, 100)
@@ -388,6 +241,10 @@ end
 function gpsSpeed(x,y,lX,lY) -- function by GOM
     s=(((x-lX)^2+(y-lY)^2)^0.5)
     return s,x,y
+end
+
+function clamp(v, min, max)
+    return math.min(math.max(v, min), max)
 end
 
 --- draws an arc around pixel coords [x], [y].
