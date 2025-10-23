@@ -115,3 +115,8 @@ if (not usingSenconnect) and info.gear ~= 1 then
                 screen.drawRectF(67, 23, 1, 3) --plus
                 screen.drawRectF(66, 24, 3, 1)
             end
+
+            if useDimDisplay then
+                screen.setColor(0, 0, 0, 150)
+                screen.drawRectF(0, 0, 100, 32)
+            end

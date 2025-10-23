@@ -8,7 +8,7 @@
 - Added Adaptive Cruise Control as a Cruise Control mode if Jupyter Radar Driver is equipped
 - Added EV Mode toggle, which changes several settings
 - (Lua too) Added new lock protections to prevent the car from moving when locked (If equipped)
-- Added automatic headlights (SenCar 6 Max only)
+- Added automatic headlights that turn on when it becomes night OR when the car turns on, and turn off when it becomes day OR when the car turns off (SenCar 6 Max only)
 
 ### Changes
 - Added Physics Sensor input to replace GPS, compass, speed inputs
