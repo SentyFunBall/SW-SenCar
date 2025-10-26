@@ -58,8 +58,8 @@ local isEv = property.getBool("EV Mode (Do not change)")
 local dashMode = property.getNumber("Dash Layout")
 
 function onTick()
-    leftBlinker = input.getBool(1)
-    rightBlinker = input.getBool(2)
+    leftBlinker = input.getBool(2)
+    rightBlinker = input.getBool(1)
     fl = input.getBool(4)
     fr = input.getBool(5)
     rl = input.getBool(6)
@@ -107,90 +107,76 @@ end
 
 function onDraw()
     if exist then
-        if leftBlinker then --oh my god, they're named the wrong way
-            c(45,201,55)
-            screen.drawTriangleF(62,24,62,30,71,27)
-        end
-        
-        if rightBlinker then
-            c(45,201,55)
-            screen.drawTriangleF(34,24,34,30,25,27)
-        end
-        
-        if cruisemode > 0 then
-            if cruisemode == 1 then
-                c(142, 230, 0)
-            elseif cruisemode == 2 then
-                c(27, 161, 250)
+        if rightBlinker then --oh my god, they're named the wrong way
+            c(45, 201, 55)
+            if dashMode < 3 then
+                drawRBlinker(62, 24)
+            elseif dashMode == 3 then -- round
+                drawRBlinker(60, 1)
+            else -- modern
+                drawRBlinker(60, 2)
             end
-            screen.drawRectF(36,26,1,5)
-            screen.drawRectF(37,25,5,1)
-            screen.drawRectF(42,26,1,5)
-            screen.drawLine(35,23,37,25)
-            screen.drawLine(37,26,40,29)
+        end
+        
+        if leftBlinker then
+            c(45, 201, 55)
+            if dashMode < 3 then
+                drawLBlinker(35, 24)
+            elseif dashMode == 3 then -- round
+                drawLBlinker(37, 1)
+            else -- modern
+                drawLBlinker(37, 2)
+            end
+        end
+
+        if cruisemode > 0 then
+            if dashMode < 3 then
+                drawCruise(36, 26)
+            elseif dashMode == 3 then -- round
+                drawCruise(75, 24)
+            else -- modern
+                drawCruise(80, 2)
+            end
+        end
+    
+        if lightmode > 0 then
+            if dashMode < 3 then
+                drawLights(31, 2)
+            elseif dashMode == 3 then -- round
+                drawLights(18, 23)
+            else -- modern
+                drawLights(74, 2)
+            end
         end
 
         --- check engine light
         if warning then
-            c(250, 166, 20)
-            screen.drawRectF(47,23,3,1)
-            screen.drawRectF(48,24,1,1)
-            screen.drawRectF(44,26,1,3)
-            screen.drawRectF(46,25,5,1)
-            screen.drawRectF(51,26,1,3)
-            screen.drawRectF(52,25,1,5)
-            screen.drawRectF(45,27,1,1)
-            screen.drawRectF(46,26,1,3)
-            screen.drawRectF(47,28,1,1)
-            screen.drawRectF(48,29,3,1)
+            if dashMode < 3 then
+                drawWarning(47, 23)
+            elseif dashMode == 3 then -- round
+                drawWarning(47, 18)
+            else -- modern
+                drawWarning(47, 23)
+            end
         end
         
         --- ESC warning
         if not esc then
-            c(200,50,50)
-            screen.drawRectF(56,29,1,1)
-            screen.drawRectF(55,28,1,1)
-            screen.drawRectF(56,27,1,1)
-            screen.drawRectF(59,29,1,1)
-            screen.drawRectF(58,28,1,1)
-            screen.drawRectF(59,27,1,1)
-            screen.drawRect(56,24,3,2)
-            screen.drawRectF(55,25,1,1)
-            screen.drawRectF(60,25,1,1)
-        end
-
-        if lightmode == 1 then --low
-            c(96,190,112)
-            screen.drawRectF(31, 2, 3, 5)
-            screen.drawLine(34, 3, 34, 6)
-
-            screen.drawLine(29, 2, 26, 3)
-            screen.drawLine(29, 4, 26, 5)
-            screen.drawLine(29, 6, 26, 7)
-        elseif lightmode == 2 then --bright
-            c(27, 161, 250)
-            screen.drawRectF(31, 2, 3, 5)
-            screen.drawLine(34, 3, 34, 6)
-
-            screen.drawLine(29, 2, 26, 2)
-            screen.drawLine(29, 4, 26, 4)
-            screen.drawLine(29, 6, 26, 6)
+            if dashMode < 3 then
+                drawESC(56, 29)
+            else -- round & modern
+                drawESC(90, 6)
+            end
         end
 
         if autodrive then
-            c(237, 202, 24)
-            screen.drawRectF(63,2,3,1)
-            screen.drawRectF(66,3,1,3)
-            screen.drawRectF(63,6,3,1)
-            screen.drawRectF(62,3,1,3)
-            screen.drawRectF(63,4,3,1)
-            screen.drawRectF(64,5,1,1)
-            screen.drawRectF(61,1,1,1)
-            screen.drawRectF(60,2,1,5)
-            screen.drawRectF(61,7,1,1)
-            screen.drawRectF(67,7,1,1)
-            screen.drawRectF(68,2,1,5)
-            screen.drawRectF(67,1,1,1)
+            if dashMode < 3 then
+                drawAP(63, 2)
+            elseif dashMode == 3 then -- round
+                drawAP(4, 2)
+            else -- modern
+                drawAP(47, 12)
+            end
         end
     end
 
@@ -240,4 +226,97 @@ function c(...) local _={...}
      _[i]=_[i]^2.2/255^2.2*_[i]
     end
     screen.setColor(table.unpack(_))
+end
+
+function drawLBlinker(x, y)
+    screen.drawTriangleF(x, y, x, y + 6, x - 9, y + 3)
+    --screen.drawTriangleF(34,24,34,30,25,27)
+end
+
+function drawRBlinker(x, y)
+    screen.drawTriangleF(x, y, x, y + 6, x + 9, y + 3)
+    --screen.drawTriangleF(62,24,62,30,71,27)
+end
+
+function drawCruise(x, y)
+    if cruisemode == 1 then
+        c(142, 230, 0)
+    elseif cruisemode == 2 then
+        c(27, 161, 250)
+    end
+    screen.drawRectF(x, y, 1, 5)
+    screen.drawRectF(x + 1, y - 1, 5, 1)
+    screen.drawRectF(x + 6, y, 1, 5)
+    screen.drawLine(x - 1, y - 3, x + 1, y - 1)
+    screen.drawLine(x + 1, y, x + 4, y + 3)
+
+    --[[screen.drawRectF(36,26,1,5)
+        screen.drawRectF(37,25,5,1)
+        screen.drawRectF(42,26,1,5)
+        screen.drawLine (35,23,37,25)
+        screen.drawLine (37,26,40,29)]]
+end
+
+function drawLights(x, y)
+    if lightmode == 1 then --low
+        c(96,190,112)
+        screen.drawRectF(x, y, 3, 5)
+        screen.drawLine(x + 3, y + 1, x + 3, y + 4)
+
+        screen.drawLine(x - 2, y, x - 5, y + 1)
+        screen.drawLine(x - 2, y + 2, x - 5, y + 3)
+        screen.drawLine(x - 2, y + 4, x - 5, y + 5)
+    elseif lightmode == 2 then --bright
+        c(27, 161, 250)
+        screen.drawRectF(x, y, 3, 5)
+        screen.drawLine(x + 3, y + 1, x + 3, y + 4)
+
+        screen.drawLine(x - 2, y, x - 5, y)
+        screen.drawLine(x - 2, y + 2, x - 5, y + 2)
+        screen.drawLine(x - 2, y + 4, x - 5, y + 4)
+    end
+end
+
+function drawAP(x, y)
+    c(237, 202, 24)
+    local s, m = 63, 2
+    screen.drawRectF(x + 0, y + 0, 3, 1)
+    screen.drawRectF(x + 3, y + 1, 1, 3)
+    screen.drawRectF(x + 0, y + 4, 3, 1)
+    screen.drawRectF(x - 1, y + 1, 1, 3)
+    screen.drawRectF(x + 0, y + 2, 3, 1)
+    screen.drawRectF(x + 1, y + 3, 1, 1)
+    screen.drawRectF(x - 2, y - 1, 1, 1)
+    screen.drawRectF(x - 3, y + 0, 1, 5)
+    screen.drawRectF(x - 2, y + 5, 1, 1)
+    screen.drawRectF(x + 4, y + 5, 1, 1)
+    screen.drawRectF(x + 5, y + 0, 1, 5)
+    screen.drawRectF(x + 4, y - 1, 1, 1)
+end
+
+function drawWarning(x, y)
+    c(250, 166, 20)
+    screen.drawRectF(x, y, 3, 1)
+    screen.drawRectF(x + 1, y + 1, 1, 1)
+    screen.drawRectF(x - 3, y + 3, 1, 3)
+    screen.drawRectF(x - 1, y + 2, 5, 1)
+    screen.drawRectF(x + 4, y + 3, 1, 3)
+    screen.drawRectF(x + 5, y + 2, 1, 5)
+    screen.drawRectF(x - 2, y + 4, 1, 1)
+    screen.drawRectF(x - 1, y + 3, 1, 3)
+    screen.drawRectF(x, y + 5, 1, 1)
+    screen.drawRectF(x + 1, y + 6, 3, 1)
+end
+
+function drawESC(x, y)
+    c(200, 50, 50)
+    screen.drawRectF(x, y, 1, 1)
+    screen.drawRectF(x - 1, y - 1, 1, 1)
+    screen.drawRectF(x, y - 2, 1, 1)
+    screen.drawRectF(x + 3, y, 1, 1)
+    screen.drawRectF(x + 2, y - 1, 1, 1)
+    screen.drawRectF(x + 3, y - 2, 1, 1)
+    screen.drawRect(x, y - 5, 3, 2)
+    screen.drawRectF(x - 1, y - 4, 1, 1)
+    screen.drawRectF(x + 4, y - 4, 1, 1)
 end

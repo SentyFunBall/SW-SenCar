@@ -101,23 +101,11 @@ function onTick()
     info.properties.unit = input.getBool(32)
     info.properties.trans = input.getBool(31) --peculiar property name
 
-    --kill me
-    info.speed = input.getNumber(1)
-    info.gear = input.getNumber(2) -- p, r, n, (1, 2, 3, 4, 5)
-    info.rps = input.getNumber(3) -- battery usage on EVs
-    info.fuel = input.getNumber(4) -- battery for EVs
-    info.temp = input.getNumber(5) -- gen power production on EVs
-    info.gpsX = input.getNumber(6)
-    info.gpsY = input.getNumber(7)
-    info.compass = input.getNumber(8)*(math.pi*2)
-    info.drivemode = input.getNumber(9)
-
     touchX = input.getNumber(10)
     touchY = input.getNumber(11)
     local touch = input.getBool(2)
 
-    useDimDisplay = input.getBool(6)
-
+    
     local clock = input.getNumber(13)
 
     if clock ~= lastClock then
@@ -131,6 +119,20 @@ function onTick()
             clockstr = ("%02d"):format(math.floor(clock * 24)) .. ":" .. ("%02d"):format(math.floor((clock * 1440) % 60))
         end
     end
+
+    if dashMode > 2 then return end
+    --kill me
+    info.speed = input.getNumber(1)
+    info.gear = input.getNumber(2) -- p, r, n, (1, 2, 3, 4, 5)
+    info.rps = input.getNumber(3) -- battery usage on EVs
+    info.fuel = input.getNumber(4) -- battery for EVs
+    info.temp = input.getNumber(5) -- gen power production on EVs
+    info.gpsX = input.getNumber(6)
+    info.gpsY = input.getNumber(7)
+    info.compass = input.getNumber(8)*(math.pi*2)
+    info.drivemode = input.getNumber(9)
+
+    useDimDisplay = input.getBool(6)
         
     if not fuelCollected then
         ticks = ticks + 1

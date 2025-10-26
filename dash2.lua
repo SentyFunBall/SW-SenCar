@@ -79,7 +79,12 @@ local tickDir = 1
 
 local pi = math.pi
 local pi2 = pi*2
-local oneDeg = pi/180
+local oneDeg = pi / 180
+local compIndicatorOffset = 0
+
+local deg = 0
+local degStr = ""
+local oldDeg = 0
 
 local lastClock = 0
 local clockstr = ""
@@ -88,7 +93,7 @@ info.properties.fuelwarn = property.getNumber("Fuel Warn %")/100
 info.properties.tempwarn = property.getNumber("Temp Warn")
 info.properties.upshift = property.getNumber("Upshift RPS")
 info.properties.downshift = property.getNumber("Downshift RPS")
-info.properties.topspeed = property.getNumber("Top Speed (m/s)")/100
+info.properties.topspeed = property.getNumber("Top Speed (m/s)")
 info.properties.ev = property.getBool("EV Mode (Do not change)")
 info.properties.trans = property.getBool("Transmission")
 info.properties.unit = property.getBool("Units")
@@ -101,6 +106,7 @@ function onTick()
     info.properties.unit = input.getBool(32)
     info.properties.trans = input.getBool(31) --peculiar property name
 
+    if dashMode < 3 then return end
     --kill me
     info.speed = input.getNumber(1)
     info.gear = input.getNumber(2) -- p, r, n, (1, 2, 3, 4, 5)
@@ -111,9 +117,6 @@ function onTick()
     info.gpsY = input.getNumber(7)
     info.compass = input.getNumber(8)*(math.pi*2)
     info.drivemode = input.getNumber(9)
-
-    touchX = input.getNumber(10)
-    touchY = input.getNumber(11)
 
     useDimDisplay = input.getBool(6)
 
@@ -147,14 +150,23 @@ function onTick()
 
     -- load from inputs
     for i = 1, 9 do
-        local row = math.ceil(i/3)
-        local col = (i-1)%3+1
-        local value = input.getNumber(i+23)
+        local row = math.ceil(i / 3)
+        local col = (i - 1) % 3 + 1
+        local value = input.getNumber(i + 23)
         if value ~= 0 then
             if not theme[row] then theme[row] = {} end
             theme[row][col] = value
         end
     end
+
+    deg = math.floor(math.deg(info.compass) % 360)
+    degStr = string.format("%.0f", (360 - deg) % 360)
+
+    if oldDeg ~= deg then
+        compIndicatorOffset = compIndicatorOffset == 1 and 0 or 1
+    end
+
+    oldDeg = deg
 end
 
 function onDraw()
@@ -162,18 +174,10 @@ function onDraw()
         -- Heavily abusing LifeBoatAPI's ability to paste code from other files by require
         -- The two dash files literally get pasted into this function
         if dashMode == 3 then
-            --require("dashes.round")
+            require("dashes.round")
         elseif dashMode == 4 then
-            --require("dashes.modern")
+            require("dashes.modern")
         end
-    elseif not acc then
-        c(100, 100, 100)
-        dst(40, 10, clockstr)
-        c(80, 80, 80)
-        if info.properties.ev then
-            dst(28, 20, "Tap to start")
-        end
-        dst(2, 2, "ST")
     end
 end
 
@@ -263,4 +267,8 @@ end
 function easeLerp(v0, v1, t)
     local ease = t <= 0.5 and 2 * t * t or -1 + (4 - 2 * t) * t
     return v0 + (v1 - v0) * ease
+end
+
+function lerp(v0,v1,t)
+  return v0+t*(v1-v0)
 end
