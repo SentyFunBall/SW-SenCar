@@ -75,7 +75,7 @@ if (not usingSenconnect) and info.gear ~= 1 then
 
             -- fuel and temp bars
             c(100, 100, 100)
-            screen.drawRectF(13, 39, 11, 1)
+            screen.drawRectF(13, 30, 11, 1)
             screen.drawRectF(72, 30, 11, 1)
 
             c(200, 200, 200)
