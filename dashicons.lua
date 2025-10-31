@@ -96,7 +96,7 @@ function onTick()
 
     if not isEv and (fuel/maxfuel < fuelwarn or temp > tempwarn) then
         warning = true
-    elseif isEv and (fuel < 1) then 
+    elseif isEv and (fuel < 0.1) then
         warning = true
     elseif otherWarning then
         warning = true
@@ -141,7 +141,7 @@ function onDraw()
     
         if lightmode > 0 then
             if dashMode < 3 then
-                drawLights(31, 2)
+                drawLights(34, 2)
             elseif dashMode == 3 then -- round
                 drawLights(18, 23)
             else -- modern

@@ -108,14 +108,18 @@ end
 -- dial that fills up
 c(theme[2][1], theme[2][2], theme[2][3])
 drawCircle(16, 16, 10, 8, 60, dialStart, math.min(info.speed / 100 / info.properties.topspeed, 1) * 230 * oneDeg) --speed
-if info.rps>info.properties.upshift then c(180, 53, 35) else c(theme[2][1], theme[2][2], theme[2][3]) end
-drawCircle(80, 16, 10, 8, 60, dialStart, math.min(info.rps / (info.properties.upshift + 5), 1) * 230 * oneDeg) --rps
+if info.rps > info.properties.upshift then c(180, 53, 35) else c(theme[2][1], theme[2][2], theme[2][3]) end
+if info.properties.ev then
+    drawCircle(80, 16, 10, 8, 60, dialStart, math.min(info.rps * 230 * oneDeg)) -- motor throttle
+else
+    drawCircle(80, 16, 10, 8, 60, dialStart, math.min(info.rps / (info.properties.upshift + 5), 1) * 230 * oneDeg) --rps
+end
 
 c(theme[3][1], theme[3][2], theme[3][3])
 
 if info.properties.ev then
-    drawCircle(16, 16, 15, 13, 60, outStart, info.fuel * 120 * oneDeg) --battery
-    drawCircle(80, 16, 15, 13, 60, outStart, math.min(info.temp / 25, 1) * 120 * oneDeg, -1) --gen power production
+    drawCircle(16, 16, 15, 13, 60, outStart, info.fuel * 120 * oneDeg) -- battery
+    drawCircle(80, 16, 15, 13, 60, outStart, math.min(info.temp / 16, 1) * 120 * oneDeg, -1) -- gen power production. 20 swatts/sec is probably max
 else
     drawCircle(16, 16, 15, 13, 60, outStart, math.min(info.fuel / info.properties.maxfuel, 1) * 120 * oneDeg) --fuel, should clamp within fuel we got in 20th tick as max fuel
     drawCircle(80, 16, 15, 13, 60, outStart, math.min(info.temp / 110, 1) * 120 * oneDeg, -1) --temp, clamps within -inf and 120

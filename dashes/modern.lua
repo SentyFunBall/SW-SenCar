@@ -6,6 +6,19 @@
 --- Developed using LifeBoatAPI - Stormworks Lua plugin for VSCode - https://code.visualstudio.com/download (search "Stormworks Lua with LifeboatAPI" extension)
 --- If you have any issues, please report them here: https://github.com/nameouschangey/STORMWORKS_VSCodeExtension/issues - by Nameous Changey
 
+            -- only draw speed in reverse
+            if info.gear == 1 then
+                c(240, 240, 240)
+                if info.properties.unit then
+                    local spd = math.floor(info.speed * 2.23694)
+                    dst(6, 4, tostring(spd), 2)
+                    c(200, 200, 200)
+                else
+                    dst(6, 4, tostring(info.speed * 3.6), 2)
+                    c(200, 200, 200)
+                end
+                return
+            end
 
             local function gradientLine(x1, y1, x2, y2, colorS, colorE, progress, steps)
                 progress = progress or 1
@@ -42,7 +55,7 @@
                 { 87, 0, 94 }
             }
             gradientLine(6, 16, 41, 16, speedColors[1], speedColors[2])
-            c(20, 20, 20, 210)
+            c(20, 20, 20, 220)
             screen.drawRectF(6, 16, 35, 1)
             local speedProgress = clamp(info.speed / info.properties.topspeed, 0, 1)
             gradientLine(6, 16, 41, 16, speedColors[1], speedColors[2], speedProgress, 35)
@@ -52,18 +65,18 @@
                 { 94, 53, 1 }
             }
             gradientLine(55, 16, 90, 16, rpsColors[1], rpsColors[2])
-            c(20, 20, 20, 210)
+            c(20, 20, 20, 220)
             screen.drawRectF(55, 16, 35, 1)
             if info.properties.ev then
+                gradientLine(55, 16, 90, 16, rpsColors[1], rpsColors[2], info.rps, 35)
+            else
                 local rpsProgress = clamp(info.rps / info.properties.upshift, 0, 1)
                 gradientLine(55, 16, 90, 16, rpsColors[1], rpsColors[2], rpsProgress, 35)
-            else
-                -- TODO: motor throttle
             end
 
             c(0, 187, 62)
             screen.drawLine(6, 28, 41, 28)
-            c(20, 20, 20, 210)
+            c(20, 20, 20, 220)
             screen.drawRectF(6, 28, 35, 1)
 
             -- compass lines

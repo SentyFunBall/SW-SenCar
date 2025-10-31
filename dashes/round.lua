@@ -6,7 +6,7 @@
 --- Developed using LifeBoatAPI - Stormworks Lua plugin for VSCode - https://code.visualstudio.com/download (search "Stormworks Lua with LifeboatAPI" extension)
 --- If you have any issues, please report them here: https://github.com/nameouschangey/STORMWORKS_VSCodeExtension/issues - by Nameous Changey
 
-
+            if info.gear == 1 then return end -- dont draw anything if in reverse
             -- background gradient
             -- different from the others, this is a constant background that "breaths" over time
 
@@ -96,8 +96,11 @@
             drawCircle(48, 13, 12, 9, 60, dialStart, math.min(info.speed / info.properties.topspeed, 1) * dialEnd) -- speed
             
             if info.properties.ev then
-                drawCircle(78, 11, 10, 8, 32, dialStart, math.min(info.rps / 20, 1) * dialEnd) -- power
-                drawCircle(31, 26, 7, 6, 16, dialStart, math.min(info.fuel / 1, 1) * dialEnd) -- battery
+                drawCircle(31, 26, 7, 6, 16, dialStart, info.fuel / 1 * dialEnd)                                                -- battery
+                c(240, 120, 120)
+                drawCircle(78, 11, 10, 8, 32, dialStart, info.rps * dialEnd / 2) -- power
+                c(120, 240, 120)
+                drawCircle(78, 11, 10, 8, 32, dialStart, info.temp / 16 * dialEnd / 2, -1) -- gen power production. 20 swatts/sec is probably max
             else
                 drawCircle(78, 11, 10, 8, 32, dialStart, math.min(info.rps / 20, 1) * dialEnd) -- tach
                 drawCircle(31, 26, 7, 6, 16, dialStart, math.min(info.fuel / info.properties.maxfuel, 1) * dialEnd) -- fuel

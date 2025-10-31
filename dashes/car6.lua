@@ -74,8 +74,9 @@ if (not usingSenconnect) and info.gear ~= 1 then
 
 
             -- fuel and temp bars
-            screen.drawRectF(13, 29, 11, 1)
-            screen.drawRectF(72, 29, 11, 1)
+            c(100, 100, 100)
+            screen.drawRectF(13, 39, 11, 1)
+            screen.drawRectF(72, 30, 11, 1)
 
             c(200, 200, 200)
 
@@ -93,19 +94,23 @@ if (not usingSenconnect) and info.gear ~= 1 then
 
                 local battPerc = info.fuel / 1                         -- battery always 0-1
                 c(240 - (battPerc * 120), 240, 240 - (battPerc * 120)) -- green full, red empty
-                screen.drawRectF(13, 29, battPerc * 11, 1)
+                screen.drawRectF(13, 30, battPerc * 11, 1)
 
-                -- TODO: gen power bar
+                -- gen power bar
+                local genPerc = math.min(info.temp / 16, 1)            -- gen power production. 20 swatts/sec is probably max
+                c(240, 240, 240)
+                screen.drawRectF(72, 30, math.max(genPerc * 11 - 1, 0), 1)
+                
             else
                 info.fuel = clamp(info.fuel, 0, info.properties.maxfuel)
                 local fuelPerc = info.fuel / info.properties.maxfuel
                 c(240, 120 + (fuelPerc * 120), 120 + (fuelPerc * 120)) -- white full, red empty
-                screen.drawRectF(13, 29, fuelPerc * 11, 1)
+                screen.drawRectF(13, 30, fuelPerc * 11, 1)
 
                 info.temp = clamp(info.temp, 0, 120)                   -- engines dont usually go past 120C
                 local tempPerc = math.min(info.temp / info.properties.tempwarn, 1)
                 c(240, 240 - (tempPerc * 120), 240 - (tempPerc * 120)) -- white empty, red full
-                screen.drawRectF(72, 29, tempPerc * 11, 1)
+                screen.drawRectF(72, 30, tempPerc * 11, 1)
             end
 
             if not usingSenconnect and info.gear ~= 1 then
