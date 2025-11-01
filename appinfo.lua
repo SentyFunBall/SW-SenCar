@@ -49,9 +49,9 @@ end
 -- try require("Folder.Filename") to include code from another file in this, so you can store code in libraries
 -- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
 
-local SENCAR_VERSION = "6.dev"
-local SENCAR_VERSION_BUILD = "1020252157b"
-local APP_VERSIONS = {MAP = "1020252157b", INFO = "1020252157b", WEATHER = "1020252157b", CAR = "1020252157b", SETTINGS = "1020252157b"}
+local SENCAR_VERSION = "6.0"
+local SENCAR_VERSION_BUILD = "1101251549f"
+local APP_VERSIONS = {MAP = "1020252157f", INFO = "1101251549f", WEATHER = "1020252157f", CAR = "1101251549f", SETTINGS = "1101251549f"}
 
 local theme = { { 47, 51, 78 }, { 86, 67, 143 }, { 128, 95, 164 } }
 
@@ -62,6 +62,8 @@ local carName = property.getText("Car name")
 
 local sleepTicks = 0
 local isSleeping = false
+
+local isEv = property.getBool("EV Mode (Do not change)")
 
 function onTick()
     acc = input.getBool(1)
@@ -139,16 +141,26 @@ function onDraw()
     drawInfo(15, 16-scrollPixels, "Car name", carName, hcolor, rcolor, tcolor)
     if units then
         drawInfo(15, 34-scrollPixels, "Distance Driven", ("%.1fmi"):format(odometer), hcolor, rcolor, tcolor)
-        drawInfo(15, 52-scrollPixels, "Dist this trip", ("%.1fmi"):format(dist), hcolor, rcolor, tcolor)
-        drawInfo(15, 70-scrollPixels, "Fuel Economy", ("%.1fmpg"):format(econ), hcolor, rcolor, tcolor)
-        drawInfo(15, 88-scrollPixels, "Fuel used", ("%.1fgal"):format(fuelUsed), hcolor, rcolor, tcolor)
+        drawInfo(15, 52 - scrollPixels, "Dist this trip", ("%.1fmi"):format(dist), hcolor, rcolor, tcolor)
         drawInfo(15, 106-scrollPixels, "Average Speed", ("%.1fmph"):format(avsp), hcolor, rcolor, tcolor)
+        if isEv then
+            drawInfo(15, 70-scrollPixels, "Efficiency", ("%.1fsw/mi"):format(econ), hcolor, rcolor, tcolor)
+            drawInfo(15, 88-scrollPixels, "Battery used", ("%.1f%%"):format(fuelUsed), hcolor, rcolor, tcolor)
+        else
+            drawInfo(15, 70-scrollPixels, "Fuel Economy", ("%.1fmpg"):format(econ), hcolor, rcolor, tcolor)
+            drawInfo(15, 88-scrollPixels, "Fuel used", ("%.1fgal"):format(fuelUsed), hcolor, rcolor, tcolor)
+        end
     else
         drawInfo(15, 34-scrollPixels, "Distance Driven", ("%.1fkm"):format(odometer), hcolor, rcolor, tcolor)
         drawInfo(15, 52-scrollPixels, "Dist this trip", ("%.1fkm"):format(dist), hcolor, rcolor, tcolor)
-        drawInfo(15, 70-scrollPixels, "Fuel Economy", ("%.1fL/100km"):format(econ), hcolor, rcolor, tcolor)
-        drawInfo(15, 88-scrollPixels, "Fuel used", ("%.1fL"):format(fuelUsed), hcolor, rcolor, tcolor)
-        drawInfo(15, 106-scrollPixels, "Average Speed", ("%.1fkmh"):format(avsp), hcolor, rcolor, tcolor)
+        drawInfo(15, 106 - scrollPixels, "Average Speed", ("%.1fkmh"):format(avsp), hcolor, rcolor, tcolor)
+        if isEv then
+            drawInfo(15, 70-scrollPixels, "Efficiency", ("%.1fsw/100km"):format(econ), hcolor, rcolor, tcolor)
+            drawInfo(15, 88-scrollPixels, "Battery used", ("%.1f%%"):format(fuelUsed), hcolor, rcolor, tcolor)
+        else
+            drawInfo(15, 70-scrollPixels, "Fuel Economy", ("%.1fL/100km"):format(econ), hcolor, rcolor, tcolor)
+            drawInfo(15, 88-scrollPixels, "Fuel used", ("%.1fL"):format(fuelUsed), hcolor, rcolor, tcolor)
+        end
     end
 
     c(100, 100, 100)
