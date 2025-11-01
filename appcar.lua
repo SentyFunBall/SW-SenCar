@@ -51,19 +51,36 @@ end
 
 local theme = { { 47, 51, 78 }, { 86, 67, 143 }, { 128, 95, 164 } }
 local scrollPixels = 0
-local maxScroll = 92
 
 local sleepTicks = 0
 local isSleeping = false
 
 local actions = {
-    {"Hatch", false}, --cabin wall on echolodia5,2
-    {"Back light", false}, --not sure what this is on other cars other than echolodia
-    {"Transponder", false},
-    {"Heater", false},
-    {"Doors", false},
-    {"Disable chime", false}, --sucks for non pro cars i guess
+    -- Doors & Access
+    { "Doors",        false },
+    { "Car Locks",    false },
+    { "Auto Doors",   true },
+    { "Trunk",        false },
+    { "Front Trunk",  false },
+    { "Charge Port",  false },
+
+    -- Interior & Comfort
+    { "Heater",       false },
+    { "Fold Seats",   false },
+    { "Dome Light",   false },
+    { "Sunroof",      false },
+    { "Night Light",  false },
+    { "Rave Mode",    false },
+
+    -- Audio & Effects
+    { "Megaphone",    false },
+    { "Klaxon Large", false },
+    { "Door Chime",   true },
+
+    -- Driving
+    { "Creep",        false },
 }
+local maxScroll = #actions * 11 + 25
 
 function onTick()
     acc = input.getBool(1)
@@ -120,10 +137,13 @@ function onTick()
         --PROCESSING
         if not lock then
             for i = 1, #actions do
-                if press == 2 and isPointInRectangle(15, 15-scrollPixels+i*11, 80, 8) then
+                if press == 2 and isPointInRectangle(15, 15 - scrollPixels + i * 11, 80, 8) then
                     actions[i][2] = not actions[i][2]
                 end
-                output.setBool(i+3, actions[i][2])
+                output.setBool(i + 3, actions[i][2])
+            end
+            if actions[1][2] then -- for this car specifically 
+                actions [1][2] = false
             end
         end
     end
