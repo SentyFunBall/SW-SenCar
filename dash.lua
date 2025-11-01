@@ -124,7 +124,7 @@ function onTick()
     --kill me
     info.speed = input.getNumber(1)
     info.gear = input.getNumber(2) -- p, r, n, (1, 2, 3, 4, 5)
-    info.rps = input.getNumber(3) -- battery usage on EVs
+    info.rps = math.abs(input.getNumber(3)) -- battery usage on EVs
     info.fuel = input.getNumber(4) -- battery for EVs
     info.temp = input.getNumber(5) -- gen power production on EVs
     info.gpsX = input.getNumber(6)
