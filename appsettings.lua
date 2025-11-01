@@ -86,7 +86,10 @@ local actions = { --action {"name", state, type (0=toggle,1=dropdown,2=slider), 
     { "Gradient Res", 0,                                     2, { n = 1, m = 9, v = 6, s = 0.1 } },
     { "Theme",        0,                                     1, themes },
     { "Dark Mode",    false,                                 0 },
-    { "SenConnect",   property.getBool("Enable SenConnect"), 0 },
+    { "SenConnect",     property.getBool("Enable SenConnect"), 0 },
+    { "Auto sleep",     true,                                  0 },
+    { "Pwr Bias (F/R)", 0,                                     2, { n = -1, m = 1, v = 0, s = 0.02 } },
+    { "Max Power",      0,                                     2, { n = 0, m = 100, v = 100, s = 1 } },
 }
 local actionHeightOffsets = {}
 local total = 0
@@ -143,7 +146,7 @@ function onTick()
     end
 
     if app == 5 and not isSleeping then --die
-        maxScroll = open and 189 or 153 --adjust max scroll if dropdown is open
+        maxScroll = 204 -- ~~adjust max scroll if dropdown is open~~ no longer needed, const
         scrollPixels = math.min(scrollPixels, maxScroll - 64)
 
         --scroll
@@ -224,8 +227,11 @@ function onTick()
     end
     output.setBool(6, actions[9][2])
     output.setBool(7, actions[10][2])
+    output.setBool(8, actions[11][2])
 
     output.setNumber(1, math.floor(9 - actions[7][4].v))
+    output.setNumber(2, actions[12][4].v)
+    output.setNumber(3, actions[13][4].v / 100)
     channel = 24
     for i = 1, 3 do
         for j = 1, 3 do

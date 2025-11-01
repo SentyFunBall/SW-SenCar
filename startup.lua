@@ -13,7 +13,9 @@ function onTick()
     local dashTouch = input.getBool(4) and not pulse
 	pulse = input.getBool(4)
 
-	local seatOccupied = input.getBool(5)
+    local seatOccupied = input.getBool(5)
+	
+	local doAutoSleep = input.getBool(6)
 
 	if cap then
 		if button then
@@ -26,7 +28,7 @@ function onTick()
 	end
 
 	if isEV then
-		if not seatOccupied and s then
+		if not seatOccupied and s and doAutoSleep then
 			ticks = ticks + 1
 			if ticks > 1800 then -- turn off after 30 seconds
 				s = false
