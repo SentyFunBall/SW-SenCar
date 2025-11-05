@@ -117,6 +117,8 @@ actions[2][2] = not property.getBool("Transmission")
 actions[6][2] = defaultTheme
 local theme = _colors[defaultTheme]
 
+local lastIsNight = false
+
 function onTick()
     acc = input.getBool(1)
     app = input.getNumber(3)
@@ -124,6 +126,16 @@ function onTick()
     touchX = input.getNumber(1)
     touchY = input.getNumber(2)
     press = input.getBool(3) and press + 1 or 0
+
+    local isNight = input.getBool(6)
+    if isNight ~= lastIsNight then
+        lastIsNight = isNight
+        if isNight then
+            actions[9][2] = true
+        else
+            actions[9][2] = false
+        end
+    end
 
     local lock = not input.getBool(4)
 

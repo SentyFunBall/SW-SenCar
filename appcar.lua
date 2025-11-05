@@ -140,12 +140,15 @@ function onTick()
                 if press == 2 and isPointInRectangle(15, 15 - scrollPixels + i * 11, 80, 8) then
                     actions[i][2] = not actions[i][2]
                 end
-                output.setBool(i + 3, actions[i][2])
             end
             if actions[1][2] then -- for this car specifically 
                 actions [1][2] = false
             end
         end
+    end
+
+    for i = 1, #actions do
+        output.setBool(i + 3, actions[i][2])
     end
 end
 
