@@ -67,8 +67,8 @@ local actions = {
     -- Interior & Comfort
     { "Heater",       false },
     { "Fold Seats",   false },
-    { "Dome Light",   false },
     { "Sunroof",      false },
+    { "Dome Light",   false },
     { "Night Light",  false },
     { "Rave Mode",    false },
 
@@ -79,6 +79,7 @@ local actions = {
 
     -- Driving
     { "Creep",        false },
+    { "AEB",          true },
 }
 local maxScroll = #actions * 11 + 25
 

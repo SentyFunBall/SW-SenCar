@@ -49,18 +49,21 @@ require("APIs.WidgetAPI")
 
 local theme = { { 47, 51, 78 }, { 86, 67, 143 }, { 128, 95, 164 } }
 
+local color = {133, 197, 230}
+
 --myWidget = {id = 0, drawn = false, {content = "Batt", x = 0, y = 0, [h = false, color = {100, 100, 100}]}, {content = 0, x = 0, y = 6, [h = false, color = {10, 10, 10}]}
 local batteryWidget = {id = 0, drawn = false, 
-    {content = "Batt", x = 1, y = 1, h = false, color = {200, 200, 200}}, 
-    {content = 0, x = 1, y = 8, h = false, color = {105, 190, 124}},
-    {content = 0, x = 1, y = 14, h = false, color = {105, 190, 124}}
+    { content = "Battery",    x = 1, y = 1,  h = false, color = { 200, 200, 200 } },
+    { content = "Inst Use:",  x = 1, y = 8,  h = false, color = { 105, 190, 124 } },
+    { content = "Capacity:",  x = 1, y = 14, h = false, color = { 105, 190, 124 } },
+    { content = "Regen:",     x = 1, y = 20, h = false, color = { 105, 190, 124 } },
 }
 
-local weatherWidget = {id = 1, drawn = false, 
-    {content = "Weather", x = 1, y = 1, h = false, color = {200, 200, 200}},
-    {content = 0, x = 1, y = 8, h = false, color = {105, 190, 104}},
-    {content = 0, x = 1, y = 14, h = false, color = {105, 190, 104}},
-    {content = 0, x = 1, y = 20, color = {105, 190, 104}}
+local weatherWidget = {id = 1, drawn = false,
+    { content = "WX",      x = 1, y = 1,  h = false, color = { 200, 200, 200 } },
+    { content = "Sunny",        x = 1, y = 8,  h = false, color = { 105, 190, 124 } },
+    { content = "Rng",  x = 1, y = 14, h = false, color = { 200, 200, 200 } },
+    { content = "0mi",         x = 1, y = 20, h = false, color = { 100, 100, 100 } },
 }
 
 tick = 0
@@ -70,9 +73,14 @@ function onTick()
     exist = input.getBool(2)
 
     local units = input.getBool(32)
-    battery = string.format("%.1f", input.getNumber(1)*100)
-    battDelta = string.format("%.3f", input.getNumber(2)*-1000)
-    local rain = input.getNumber(4)
+    battery = input.getNumber(2)
+    local rain = input.getNumber(8)
+    local fog = input.getNumber(9)
+    local temp = input.getNumber(10)
+
+    local insUse = input.getNumber(7)
+    local cap = input.getNumber(6)
+    local regen = input.getNumber(5)
 
     useDimDisplay = input.getBool(31)
 
@@ -87,22 +95,79 @@ function onTick()
         end
     end
 
-    if units then
-        wind = string.format("%.0fmph", input.getNumber(3)*2.237)
+    -- Determine precipitation type and intensity
+    local isSnow = temp < 5
+    if rain < 0.05 then
+        rain = "N/A"
+    elseif rain < 0.3 then
+        rain = isSnow and "Snow" or "Light"
+    elseif rain < 0.7 then
+        rain = isSnow and "Bad sno" or "Mod"
     else
-        wind = string.format("%.0fkph", input.getNumber(3)*3.6)
+        rain = isSnow and "Sno Stm" or "Hvy"
     end
-    if rain < 0.05 then rain = "None" elseif rain < 0.3 then rain = "Light" elseif rain < 0.7 then rain = "Medium" else rain = "Heavy" end
-    fog = string.format("%.1f%%",input.getNumber(5)*100)
+
+    -- Determine weather conditions
+    local isHeavyPrecip = (rain == "Hvy" or rain == "Sno Stm")
+    local isAnyPrecip = rain ~= "N/A"
+    local isDenselyFoggy = fog > 0.7
+    local isFoggy = fog > 0.3
+
+    if isHeavyPrecip and fog > 0.5 then
+        conditions = isSnow and "Bliz" or "Storm"
+        color = isSnow and {207, 207, 207} or {86, 88, 89}
+    elseif isAnyPrecip then
+        conditions = isSnow and "Snow" or "Rain"
+        color = isSnow and {204, 206, 207} or {141, 151, 158}
+    elseif isFoggy then
+        if isDenselyFoggy then
+            conditions = isSnow and "Fz fog" or "Fog"
+            color = isSnow and {106, 119, 125} or {90, 110, 120}
+        else
+            conditions = isSnow and "Fz fog" or "Fog"
+            color = isSnow and {106, 119, 125} or {90, 110, 120}
+        end
+    elseif isSnow then
+        conditions, color = "Cold", {165, 242, 243}
+    else
+        conditions = "Clear"
+        color = {135, 206, 235}
+    end
+
+    -- Estimate range lost based on weather
+    local rangeLossFactor = 1.0
+
+    if conditions == "Hvy" or conditions == "Sno Stm" then
+        rangeLossFactor = rangeLossFactor - (isSnow and 0.4 or 0.3)
+    elseif temp < 10 then
+        rangeLossFactor = rangeLossFactor - (isSnow and 0.3 or 0.2)
+    elseif isAnyPrecip then
+        rangeLossFactor = rangeLossFactor - (isSnow and 0.2 or 0.05)
+    end
+    rangeLossFactor = math.max(110 * battery * rangeLossFactor, 0.0)
+    
+    -- Update widgets
     if batteryWidget.drawn then
-        batteryWidget[2].content = battery.."%"
-        batteryWidget[3].content = battDelta
+        batteryWidget[2].content = string.format("Use:%.2fsw", insUse*60)
+        batteryWidget[3].content = string.format("Cap:%.1fKw", cap/1000)
+        batteryWidget[4].content = string.format("Rgn:%.0fsw", regen*60)
     end
+
     if weatherWidget.drawn then
-        weatherWidget[2].content = "Rain:"..rain
-        weatherWidget[3].content = "Fog:"..fog
-        weatherWidget[4].content = "Wind:"..wind
+        weatherWidget[2].content = conditions
+        weatherWidget[2].color = color
+        if units then
+            weatherWidget[4].content = string.format("%.0fmi", rangeLossFactor)
+        else
+            weatherWidget[4].content = string.format("%.0fkm", rangeLossFactor * 1.60934)
+        end
+        if rangeLossFactor < 0.5 then
+            weatherWidget[4].color = {255, 100, 100}
+        else
+            weatherWidget[4].color = {100, 255, 100}
+        end
     end
+
     if exist and tick < 1 then
         tick = tick + 0.05
     end
@@ -119,8 +184,9 @@ function onDraw()
         screen.drawRectF((i * 3)-3, 0, 3, 32)
     end
     
-    weatherWidget = WidgetAPI.draw(1, true, weatherWidget, {theme[2][1]+15, theme[2][2]+15, theme[2][3]+15})
-    batteryWidget = WidgetAPI.draw(3, false, batteryWidget, {theme[2][1]+15, theme[2][2]+15, theme[2][3]+15})
+    -- draw(slot, large, widget, bgcolor)
+    batteryWidget = WidgetAPI.draw(1, true, batteryWidget, { theme[2][1] + 15, theme[2][2] + 15, theme[2][3] + 15 })
+    weatherWidget = WidgetAPI.draw(3, false, weatherWidget, { theme[2][1] + 15, theme[2][2] + 15, theme[2][3] + 15 })
     
     c(0,0,0,lerp(255, 1, tick))
     screen.drawRectF(0, 0, 96, 32)
