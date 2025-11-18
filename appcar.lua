@@ -142,14 +142,15 @@ function onTick()
                     actions[i][2] = not actions[i][2]
                 end
             end
-            if actions[1][2] then -- for this car specifically 
-                actions [1][2] = false
-            end
         end
     end
 
     for i = 1, #actions do
         output.setBool(i + 3, actions[i][2])
+    end
+
+    if actions[1][2] then -- for this car specifically
+        actions[1][2] = false
     end
 end
 

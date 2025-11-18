@@ -149,8 +149,8 @@ function onTick()
     -- Update widgets
     if batteryWidget.drawn then
         batteryWidget[2].content = string.format("Use:%.2fsw", insUse*60)
-        batteryWidget[3].content = string.format("Cap:%.1fKw", cap/1000)
-        batteryWidget[4].content = string.format("Rgn:%.0fsw", regen*60)
+        batteryWidget[3].content = string.format("Cap:%.1fKW", cap/1000)
+        batteryWidget[4].content = string.format("Rgn:%.0fsw", regen*2)
     end
 
     if weatherWidget.drawn then

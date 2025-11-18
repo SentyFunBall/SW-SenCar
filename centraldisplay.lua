@@ -83,7 +83,7 @@ function onTick()
     local clock = input.getNumber(3)
     gradientResolution = clamp(input.getNumber(4), 1, 9)
 
-    useDimDisplay = input.getBool(6)
+    useDimDisplay = input.getBool(31)
 
     local enableSleep = not input.getBool(5) -- NOT because settings output is inverted (WHY)
 

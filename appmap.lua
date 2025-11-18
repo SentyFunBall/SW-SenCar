@@ -73,8 +73,8 @@ function onTick()
     touchY = input.getNumber(2)
     press = input.getBool(3) and press + 1 or 0
 
-    local x = input.getNumber(4)
-    local y = input.getNumber(5)
+    x = input.getNumber(4)
+    y = input.getNumber(5)
     compass = input.getNumber(6)*(math.pi*2)
 
     local enableSleep = not input.getBool(5) -- NOT because settings output is inverted (WHY)
@@ -164,7 +164,7 @@ function onDraw()
                 text = ("%.1fk"):format(dist)
             end
 
-            drawRoundedRect(math.floor(sx-10), math.floor(sy-10), #text*5+5, 8) 
+            drawRoundedRect(math.floor(sx-10), math.floor(sy-10), #text*4+4, 8) 
             c(theme[2][1], theme[2][2], theme[2][3])
             dst(sx-8, sy-8, text)
         end
