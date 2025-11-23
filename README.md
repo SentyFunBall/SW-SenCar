@@ -4,8 +4,6 @@
 [Change logs](docs/logs.md)
 
 ## Personal. Powerful. Expandable.
-![SenCar 6](https://user-images.githubusercontent.com/57205125/192074194-ca7c8675-0fe5-4a62-be54-35632bcf5f21.jpg)
-
 
 SenCar 6 enhances your car with all new personalization features, seemless communication menthods, a brand new UI, drive modes, and more.
 
