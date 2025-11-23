@@ -60,7 +60,7 @@ local batteryWidget = {id = 0, drawn = false,
 }
 
 local weatherWidget = {id = 1, drawn = false,
-    { content = "WX",      x = 1, y = 1,  h = false, color = { 200, 200, 200 } },
+    { content = "Wthr",      x = 1, y = 1,  h = false, color = { 200, 200, 200 } },
     { content = "Sunny",        x = 1, y = 8,  h = false, color = { 105, 190, 124 } },
     { content = "Rng",  x = 1, y = 14, h = false, color = { 200, 200, 200 } },
     { content = "0mi",         x = 1, y = 20, h = false, color = { 100, 100, 100 } },
