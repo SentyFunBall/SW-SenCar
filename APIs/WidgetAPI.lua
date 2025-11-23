@@ -15,7 +15,7 @@ WidgetAPI = {
     draw = function (slot, large, widget, color)
         widget.drawn = false --by default, we assume it didnt draw
         color = color or {100, 100, 100}
-        c(color[1], color[2], color[3], 240)
+        c(color[1], color[2], color[3], 200)
         if slot == 1 then
             if active.slot1.id == widget.id then --if the widget is assigned to this slot
                 if large then --large widget, draw the large style

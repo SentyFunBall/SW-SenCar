@@ -50,147 +50,177 @@ end
 -- try require("Folder.Filename") to include code from another file in this, so you can store code in libraries
 -- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
 
-_colors = {
-    {{47,51,78}, {86,67,143}, {128,95,164}}, --sencar 5 in the micro
-    {{17, 15, 107}, {22, 121, 196}, {48, 208, 217}}, --blue
-    {{74, 27, 99}, {124, 42, 161}, {182, 29, 224}}, --purple
-            {{35, 54, 41}, {29, 87, 36}, {12, 133, 26}}, --green
-{{69, 1, 10}, {122, 0, 0}, {160, 9, 9}}, --TE red
-{{38, 38, 38}, {92, 92, 92}, {140, 140, 140}}, --grey
-{{92, 50, 1}, {158, 92, 16}, {201, 119, 24}} --orange
-}
+local theme = { { 47, 51, 78 }, { 86, 67, 143 }, { 128, 95, 164 } }
+local zoom = 3
 
-zoom = 3
-mx, my = 0,0
-wx, wy = 0,0
+local mapX, mapY = 0, 0
+local mapMoveProg = 0
+local finalMapX, finalMapY = 0, 0
+local wx, wy = 0, 0
+local oldMapX, oldMapY = 0, 0
+local movingMap = false
+local focus = true
+
+local sleepTicks = 0
+local isSleeping = false
 
 function onTick()
     acc = input.getBool(1)
-    theme = input.getNumber(32)
-if theme == 0 then
-theme = property.getNumber("Theme")
-end
+    app = input.getNumber(3)
     units = input.getBool(32)
 
     touchX = input.getNumber(1)
     touchY = input.getNumber(2)
-
     press = input.getBool(3) and press + 1 or 0
-    app = input.getNumber(3)
 
     x = input.getNumber(4)
     y = input.getNumber(5)
     compass = input.getNumber(6)*(math.pi*2)
 
-    if app == 2 then --maps
-        if press > 0 and isPointInRectangle(touchX, touchY, 0, 18, 12, 12) then zoom = clamp(zoom - 0.01 - press/800, 0.3, 25) zoomin = true else zoomin = false end --zoomin
-        if press > 0 and isPointInRectangle(touchX, touchY, 0, 30, 12, 12) then zoom = clamp(zoom + 0.01 + press/800, 0.3, 25) zoomout = true else zoomout = false end --zoomout
-        if press > 0 and isPointInRectangle(touchX, touchY, 0, 42, 12, 12) then zoom = 3 mx,my = 0,0 resetbtn = true else resetbtn = false end --reset
-        if press == 2 and isPointInRectangle(touchX, touchY, 0, 52, 12, 12) then if wx == 0 then wx,wy = ax,ay else wx,wy = 0,0 end wbtn = true else wbtn = false end --waypoint
-        if press > 0 and isPointInRectangle(touchX, touchY, 12, 14, 96, 64) then mapt = true else mapt = false end --map touch
-        output.setNumber(1, wx)
+    local enableSleep = not input.getBool(5) -- NOT because settings output is inverted (WHY)
+
+    -- sleep logic
+    if enableSleep then
+        if press > 0 then
+            sleepTicks = 0
+            isSleeping = false
+        else
+            sleepTicks = sleepTicks + 1
+            if sleepTicks > 600 then
+                isSleeping = true
+            end
+        end
+    else
+        sleepTicks = 0
+        isSleeping = false
+    end
+
+    -- load from inputs
+    for i = 1, 9 do
+        local row = math.ceil(i/3)
+        local col = (i-1)%3+1
+        local value = input.getNumber(i+23)
+        if value ~= 0 then
+            if not theme[row] then theme[row] = {} end
+            theme[row][col] = value
+        end
+    end
+
+    if app == 2 and not isSleeping then --maps
+        if press > 0 and isPointInRectangle(0, 18, 12, 12) then zoom = clamp(zoom - 0.01 - press/800, 0.3, 25) zoomin = true else zoomin = false end --zoomin
+        if press > 0 and isPointInRectangle(0, 30, 12, 12) then zoom = clamp(zoom + 0.01 + press/800, 0.3, 25) zoomout = true else zoomout = false end --zoomout
+        if press > 0 and isPointInRectangle(0, 42, 12, 12) then zoom = 3 mapX, mapY = 0,0 focus, resetbtn, movingMap = true, true, false else resetbtn = false end --reset
+        if press == 2 and isPointInRectangle(0, 52, 12, 12) then if wx == 0 then wx,wy = mapX,mapY else wx,wy = 0,0 end wbtn = true else wbtn = false end --waypoint
+        if (press == 1 or press % 30 == 1) and isPointInRectangle(12, 14, 96, 64) then --map touch
+            finalMapX, finalMapY = map.screenToMap(mapX, mapY, zoom, 96, 64, touchX, touchY)
+            oldMapX, oldMapY = mapX, mapY
+            mapMoveProg, movingMap, focus = 0, true, false
+        end
+
+        if movingMap then
+            mapMoveProg = math.min(mapMoveProg + 0.1, 1)
+            mapX, mapY = easedLerp(oldMapX, finalMapX, mapMoveProg), easedLerp(oldMapY, finalMapY, mapMoveProg)
+
+            if mapMoveProg >= 1 then movingMap = false end
+        end
+
+        if focus then
+            mapX, mapY = x, y
+        end
     end
 end
 
 function onDraw()
-    local _ = _colors[theme]
-    if acc then
+    if not acc or app ~= 2 or isSleeping then return end
 
-----------[[* MAIN OVERLAY *]]--
-        if app == 2 then --map
-            if mx == 0 then ax = x else ax = mx end --actual X
-            if my == 0 then ay = y else ay = my end --actual Y
-            if press == 2 and isPointInRectangle(touchX, touchY, 15, 13, 96, 64) then mx, my = map.screenToMap(ax, ay, zoom, 96, 64, touchX, touchY) end --masterX, masterY
+    ---[[* MAIN OVERLAY *]]---
+    screen.drawMap(mapX, mapY, zoom)
 
-            screen.drawMap(ax, ay, zoom)
+    c(theme[2][1], theme[2][2], theme[2][3])
+    screen.drawCircle(48, 32, 1)
+    dx, dy = map.mapToScreen(mapX, mapY, zoom, 96, 64, x, y) --drawX, drawY
+    drawPointer(dx, dy, compass, 5)
 
-            c(_[2][1], _[2][2], _[2][3])
-            screen.drawCircle(48, 32, 1)
-            dx, dy = map.mapToScreen(ax, ay, zoom, 96, 64, x, y) --drawX, drawY 
-            drawPointer(dx, dy, compass, 5)
+    if wx ~= 0 then --if waypoint is active
+        -- find waypoint coords and draw the line from player to it
+        dx2,dy2 = map.mapToScreen(mapX, mapY, zoom, 96, 64, wx, wy)
+        screen.drawLine(dx2, dy2, dx, dy)
 
-            if wx ~= 0 then --if waypoint is active
-                -- find waypoint coords and draw the line from player to it
-                dx2,dy2 = map.mapToScreen(ax,ay, zoom, 96, 64, wx, wy)
-                screen.drawLine(dx2, dy2, dx, dy)
+        --draw the waypoint
+        c(theme[3][1], theme[3][2], theme[3][3])
+        screen.drawCircle(dx2,dy2,1)
 
-                --draw the waypoint
-                c(_[3][1], _[3][2], _[3][3])
-                screen.drawCircle(dx2,dy2,1)
-
-                --find midpoint of line and draw distance in box
-                c(200,200,200)
-                sx, sy = (dx+dx2)/2, (dy+dy2)/2 --averageX, averageY
-                tempx, tempy = map.screenToMap(ax, ay, zoom, 96, 64, dx, dy)
-                tempx2, tempy2 = map.screenToMap(ax, ay, zoom, 96, 64, dx2, dy2)
-                dist = math.sqrt((tempx2 - tempx)*(tempx2 - tempx) + (tempy2 - tempy)*(tempy2 - tempy)) --should give us world distance
-                dist = dist/1000
-                if zoom < dist * 4 then 
-                    if units then --imperial
-                        text = ("%.1fmi"):format(dist/1.6)
-                    else-- metric
-                        text = ("%.1fk"):format(dist)
-                    end
-
-                    drawRoundedRect(math.floor(sx-10), math.floor(sy-10), #text*5+5, 8) 
-                    c(_[2][1], _[2][2], _[2][3])
-                    screen.drawText(sx-8, sy-8, text)
-                end
-            end
-
-            c(_[1][1], _[1][2], _[1][3], 250)
+        --find midpoint of line and draw distance in box
+        c(200,200,200)
+        sx, sy = (dx+dx2)/2, (dy+dy2)/2 --averageX, averageY
+        tempx, tempy = map.screenToMap(mapX, mapY, zoom, 96, 64, dx, dy)
+        tempx2, tempy2 = map.screenToMap(mapX, mapY, zoom, 96, 64, dx2, dy2)
+        dist = math.sqrt((tempx2 - tempx)*(tempx2 - tempx) + (tempy2 - tempy)*(tempy2 - tempy)) --should give us world distance
+        dist = dist/1000
+        if zoom < dist * 4 then 
             if units then --imperial
-                tx = "X:"..("%.1fmi"):format(ax/1609)
-                ty = "Y:"..("%.1fmi"):format(ay/1609)
-            else --metric
-                tx = "X:"..("%.1fk"):format(ax/1000)
-                ty = "Y:"..("%.1fk"):format(ay/1000)
-            end
-            drawRoundedRect(54, 46, #ty*5+5, 16)
-            drawRoundedRect(14, 53, 37, 9)
-            c(200, 200, 200)
-            screen.drawText(55, 49, tx)
-            screen.drawText(55, 55, ty)
-            screen.drawLine(17,54,48,54)
-            screen.drawLine(17,53,17,54)
-            screen.drawLine(47,53,47,54)
-
-            --draw the cur zoom according to the unit
-            if units then
-                screen.drawText(16, 56, string.format("%.2fmi", zoom/1.6))
-            else
-                screen.drawText(16, 56, string.format("%.2fkm", zoom))
+                text = ("%.1fmi"):format(dist/1.6)
+            else-- metric
+                text = ("%.1fk"):format(dist)
             end
 
-            --if the map is touched, put a light black box over it
-            if mapt then
-                c(0,0,0,100)
-                screen.drawRectF(12,14,96,64)
-            end
-        end
-
-----------[[* CONTROLS OVERLAY *]]--
-        c(_[1][1], _[1][2], _[1][3], 250)
-        screen.drawRectF(0, 15, 13, 64)
-
-        if app == 2 then
-            --zoom icons
-            if zoomin then c(150,150,150) else c(170, 170, 170)end
-            drawRoundedRect(1, 16, 10, 10)
-            if zoomout then c(150,150,150) else c(170, 170, 170)end
-            drawRoundedRect(1,28,10,10)
-            if resetbtn then c(150,150,150) else c(170, 170, 170)end
-            drawRoundedRect(1,40,10,10)
-            if wbtn then c(150,150,150) else c(170, 170, 170)end
-            drawRoundedRect(1,52,10,10)
-            c(100,100,100)
-            screen.drawText(5, 43, "R")
-            screen.drawLine(4, 33, 9, 33)
-            screen.drawLine(4, 21, 9, 21)
-            screen.drawLine(6, 19, 6, 24)
-            if wx == 0 then screen.drawText(5, 55, "W") else screen.drawText(5, 55, "C") end
+            drawRoundedRect(math.floor(sx-10), math.floor(sy-10), #text*4+4, 8) 
+            c(theme[2][1], theme[2][2], theme[2][3])
+            dst(sx-8, sy-8, text)
         end
     end
+
+    -- draw the coordinates box
+    c(theme[1][1], theme[1][2], theme[1][3], 250)
+    if units then --imperial
+        tx = "X:"..("%.1fmi"):format(mapX/1609)
+        ty = "Y:"..("%.1fmi"):format(mapY/1609)
+    else --metric
+        tx = "X:"..("%.1fkm"):format(mapX/1000)
+        ty = "Y:"..("%.1fkm"):format(mapY/1000)
+    end
+    drawRoundedRect(62, 47, 32, 15)
+    drawRoundedRect(14, 53, 28, 9) --this is for the zoom box
+    c(200, 200, 200)
+    dst(63, 50, tx)
+    dst(63, 56, ty)
+    screen.drawLine(17,54,39,54)
+    screen.drawLine(17,53,17,54)
+    screen.drawLine(38,53,38,54)
+
+    --draw the cur zoom according to the unit
+    if units then
+        dst(16, 56, string.format("%.2fmi", zoom/1.6))
+    else
+        dst(16, 56, string.format("%.2fkm", zoom))
+    end
+
+    --if the map is touched, put a light black box over it
+    if mapt then
+        c(0,0,0,100)
+        screen.drawRectF(12,14,96,64)
+    end
+
+----------[[* CONTROLS OVERLAY *]]--
+    c(theme[1][1], theme[1][2], theme[1][3], 250)
+    screen.drawRectF(0, 15, 13, 64)
+
+    --zoom icons
+    if zoomin then c(150,150,150) else c(170, 170, 170)end
+    drawRoundedRect(1, 16, 10, 10)
+    if zoomout then c(150,150,150) else c(170, 170, 170)end
+    drawRoundedRect(1,28,10,10)
+    if resetbtn then c(150,150,150) else c(170, 170, 170)end
+    drawRoundedRect(1,40,10,10)
+    if wbtn then c(150,150,150) else c(170, 170, 170)end
+    drawRoundedRect(1,52,10,10)
+
+    c(100,100,100)
+    screen.drawText(5, 43, "R")
+    screen.drawLine(4, 33, 9, 33)
+    screen.drawLine(4, 21, 9, 21)
+    screen.drawLine(6, 19, 6, 24)
+    if wx == 0 then screen.drawText(5, 55, "W") else screen.drawText(5, 55, "C") end
 end
 
 function c(...) local _={...}
@@ -200,8 +230,8 @@ function c(...) local _={...}
     screen.setColor(table.unpack(_))
 end
 
-function isPointInRectangle(x, y, rectX, rectY, rectW, rectH)
-	return x > rectX and y > rectY and x < rectX+rectW and y < rectY+rectH
+function isPointInRectangle(rectX, rectY, rectW, rectH)
+	return touchX > rectX and touchY > rectY and touchX < rectX+rectW and touchY < rectY+rectH
 end
 
 function drawPointer(x,y,c,s)
@@ -240,6 +270,11 @@ end
 
 function clamp(value, lower, upper)
     return math.min(math.max(value, lower), upper)
+end
+
+function easedLerp(v0, v1, t)
+    local ease = t <= 0.5 and 2 * t * t or -1 + (4 - 2 * t) * t
+    return v0 + (v1 - v0) * ease
 end
 
 --dst(x,y,text,size=1,rotation=1,is_monospace=false)

@@ -47,28 +47,23 @@ end
 -- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
 require("APIs.WidgetAPI")
 
-_colors = {
-    {{47,51,78}, {86,67,143}, {128,95,164}}, --sencar 5 in the micro
-    {{17, 15, 107}, {22, 121, 196}, {48, 208, 217}}, --blue
-    {{74, 27, 99}, {124, 42, 161}, {182, 29, 224}}, --purple
-            {{35, 54, 41}, {29, 87, 36}, {12, 133, 26}}, --green
-{{69, 1, 10}, {122, 0, 0}, {160, 9, 9}}, --TE red
-{{38, 38, 38}, {92, 92, 92}, {140, 140, 140}}, --grey
-{{92, 50, 1}, {158, 92, 16}, {201, 119, 24}} --orange
-}
+local theme = { { 47, 51, 78 }, { 86, 67, 143 }, { 128, 95, 164 } }
+
+local color = {133, 197, 230}
 
 --myWidget = {id = 0, drawn = false, {content = "Batt", x = 0, y = 0, [h = false, color = {100, 100, 100}]}, {content = 0, x = 0, y = 6, [h = false, color = {10, 10, 10}]}
-batteryWidget = {id = 0, drawn = false, 
-    {content = "Batt", x = 1, y = 1, h = false, color = {200, 200, 200}}, 
-    {content = 0, x = 1, y = 8, h = false, color = {105, 190, 124}},
-    {content = 0, x = 1, y = 14, h = false, color = {105, 190, 124}}
+local batteryWidget = {id = 0, drawn = false, 
+    { content = "Battery",    x = 1, y = 1,  h = false, color = { 200, 200, 200 } },
+    { content = "Inst Use:",  x = 1, y = 8,  h = false, color = { 105, 190, 124 } },
+    { content = "Capacity:",  x = 1, y = 14, h = false, color = { 105, 190, 124 } },
+    { content = "Regen:",     x = 1, y = 20, h = false, color = { 105, 190, 124 } },
 }
 
-weatherWidget = {id = 1, drawn = false, 
-    {content = "Weather", x = 1, y = 1, h = false, color = {200, 200, 200}},
-    {content = 0, x = 1, y = 8, h = false, color = {105, 190, 104}},
-    {content = 0, x = 1, y = 14, h = false, color = {105, 190, 104}},
-    {content = 0, x = 1, y = 20, color = {105, 190, 104}}
+local weatherWidget = {id = 1, drawn = false,
+    { content = "Wthr",      x = 1, y = 1,  h = false, color = { 200, 200, 200 } },
+    { content = "Sunny",        x = 1, y = 8,  h = false, color = { 105, 190, 124 } },
+    { content = "Rng",  x = 1, y = 14, h = false, color = { 200, 200, 200 } },
+    { content = "0mi",         x = 1, y = 20, h = false, color = { 100, 100, 100 } },
 }
 
 tick = 0
@@ -76,32 +71,103 @@ tick = 0
 function onTick()
     acc = input.getBool(1)
     exist = input.getBool(2)
-    theme = input.getNumber(32)
-if theme == 0 then
-theme = property.getNumber("Theme")
-end
 
-    units = input.getBool(32)
-    battery = string.format("%.1f", input.getNumber(1)*100)
-    battDelta = string.format("%.3f", input.getNumber(2)*-1000)
-    rain = input.getNumber(4)
+    local units = input.getBool(32)
+    battery = input.getNumber(2)
+    local rain = input.getNumber(8)
+    local fog = input.getNumber(9)
+    local temp = input.getNumber(10)
 
-    if units then
-        wind = string.format("%.0fmph", input.getNumber(3)*2.237)
+    local insUse = input.getNumber(7)
+    local cap = input.getNumber(6)
+    local regen = input.getNumber(5)
+
+    useDimDisplay = input.getBool(31)
+
+    -- load from inputs
+    for i = 1, 9 do
+        local row = math.ceil(i/3)
+        local col = (i-1)%3+1
+        local value = input.getNumber(i+23)
+        if value ~= 0 then
+            if not theme[row] then theme[row] = {} end
+            theme[row][col] = value
+        end
+    end
+
+    -- Determine precipitation type and intensity
+    local isSnow = temp < 5
+    if rain < 0.05 then
+        rain = "N/A"
+    elseif rain < 0.3 then
+        rain = isSnow and "Snow" or "Light"
+    elseif rain < 0.7 then
+        rain = isSnow and "Bad sno" or "Mod"
     else
-        wind = string.format("%.0fkph", input.getNumber(3)*3.6)
+        rain = isSnow and "Sno Stm" or "Hvy"
     end
-    if rain < 0.05 then rain = "None" elseif rain < 0.3 then rain = "Light" elseif rain < 0.7 then rain = "Medium" else rain = "Heavy" end
-    fog = string.format("%.1f%%",input.getNumber(5)*100)
+
+    -- Determine weather conditions
+    local isHeavyPrecip = (rain == "Hvy" or rain == "Sno Stm")
+    local isAnyPrecip = rain ~= "N/A"
+    local isDenselyFoggy = fog > 0.7
+    local isFoggy = fog > 0.3
+
+    if isHeavyPrecip and fog > 0.5 then
+        conditions = isSnow and "Bliz" or "Storm"
+        color = isSnow and {207, 207, 207} or {86, 88, 89}
+    elseif isAnyPrecip then
+        conditions = isSnow and "Snow" or "Rain"
+        color = isSnow and {204, 206, 207} or {141, 151, 158}
+    elseif isFoggy then
+        if isDenselyFoggy then
+            conditions = isSnow and "Fz fog" or "Fog"
+            color = isSnow and {106, 119, 125} or {90, 110, 120}
+        else
+            conditions = isSnow and "Fz fog" or "Fog"
+            color = isSnow and {106, 119, 125} or {90, 110, 120}
+        end
+    elseif isSnow then
+        conditions, color = "Cold", {165, 242, 243}
+    else
+        conditions = "Clear"
+        color = {135, 206, 235}
+    end
+
+    -- Estimate range lost based on weather
+    local rangeLossFactor = 1.0
+
+    if conditions == "Hvy" or conditions == "Sno Stm" then
+        rangeLossFactor = rangeLossFactor - (isSnow and 0.4 or 0.3)
+    elseif temp < 10 then
+        rangeLossFactor = rangeLossFactor - (isSnow and 0.3 or 0.2)
+    elseif isAnyPrecip then
+        rangeLossFactor = rangeLossFactor - (isSnow and 0.2 or 0.05)
+    end
+    rangeLossFactor = math.max(110 * battery * rangeLossFactor, 0.0)
+    
+    -- Update widgets
     if batteryWidget.drawn then
-        batteryWidget[2].content = battery.."%"
-        batteryWidget[3].content = battDelta
+        batteryWidget[2].content = string.format("Use:%.2fsw", insUse*60)
+        batteryWidget[3].content = string.format("Cap:%.1fKW", cap/1000)
+        batteryWidget[4].content = string.format("Rgn:%.0fsw", regen*2)
     end
+
     if weatherWidget.drawn then
-        weatherWidget[2].content = "Rain:"..rain
-        weatherWidget[3].content = "Fog:"..fog
-        weatherWidget[4].content = "Wind:"..wind
+        weatherWidget[2].content = conditions
+        weatherWidget[2].color = color
+        if units then
+            weatherWidget[4].content = string.format("%.0fmi", rangeLossFactor)
+        else
+            weatherWidget[4].content = string.format("%.0fkm", rangeLossFactor * 1.60934)
+        end
+        if rangeLossFactor < 0.5 then
+            weatherWidget[4].color = {255, 100, 100}
+        else
+            weatherWidget[4].color = {100, 255, 100}
+        end
     end
+
     if exist and tick < 1 then
         tick = tick + 0.05
     end
@@ -111,19 +177,25 @@ end
 end
 
 function onDraw()
-    local _ = _colors[theme]
-    if acc then
-        for i = 1, 97 do
-            c(lerp(_[1][1], _[2][1], i/96), lerp(_[1][2], _[2][2], i/96), lerp(_[1][3], _[2][3], i/96))
-            screen.drawLine(i-1, 0, i-1, 32)
-        end
-        
-        weatherWidget = WidgetAPI.draw(1, true, weatherWidget, {_[2][1]+15, _[2][2]+15, _[2][3]+15})
-        batteryWidget = WidgetAPI.draw(3, false, batteryWidget, {_[2][1]+15, _[2][2]+15, _[2][3]+15})
-        
-        c(0,0,0,lerp(255, 1, tick))
-        screen.drawRectF(0,0,96,32)
+    if not acc then return end
+
+    for i = 1, 32 do
+        c(lerp(theme[1][1], theme[2][1], i/32), lerp(theme[1][2], theme[2][2], i/32), lerp(theme[1][3], theme[2][3], i/32))
+        screen.drawRectF((i * 3)-3, 0, 3, 32)
     end
+    
+    -- draw(slot, large, widget, bgcolor)
+    batteryWidget = WidgetAPI.draw(1, true, batteryWidget, { theme[2][1] + 15, theme[2][2] + 15, theme[2][3] + 15 })
+    weatherWidget = WidgetAPI.draw(3, false, weatherWidget, { theme[2][1] + 15, theme[2][2] + 15, theme[2][3] + 15 })
+    
+    c(0,0,0,lerp(255, 1, tick))
+    screen.drawRectF(0, 0, 96, 32)
+    
+    if useDimDisplay then
+        screen.setColor(0, 0, 0, 150)
+        screen.drawRectF(0, 0, 96, 32)
+    end
+    
 end
 
 function c(...) local _={...}

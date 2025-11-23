@@ -1,9 +1,9 @@
---appcar
+--appsettings
 -- Author: SentyFunBall
 -- GitHub: https://github.com/SentyFunBall
 -- Workshop:
 
---Code by STCorp. Do not reuse.--
+--Code by ST. Do not reuse.--
 --- Developed using LifeBoatAPI - Stormworks Lua plugin for VSCode - https://code.visualstudio.com/download (search "Stormworks Lua with LifeboatAPI" extension)
 --- If you have any issues, please report them here: https://github.com/nameouschangey/STORMWORKS_VSCodeExtension/issues - by Nameous Changey
 
@@ -22,11 +22,7 @@ do
     simulator:setScreen(1, "3x2")
     simulator:setProperty("Theme", 1)
     simulator:setProperty("Units", true)
-    simulator:setProperty("FONT1",
-        "00019209B400AAAA793CA54A555690015244449415500BA0004903800009254956D4592EC54EC51C53A4F31C5354E52455545594104110490A201C7008A04504")
-    simulator:setProperty("FONT2",
-        "FFFE57DAD75C7246D6DCF34EF3487256B7DAE92E64D4975A924EBEDAF6DAF6DED74856B2D75A711CE924B6D4B6A4B6FAB55AB524E54ED24C911264965400000E")
-    simulator:setProperty("Car name", "Solstice")
+    simulator:setProperty("Transmission", true)
 
     -- Runs every tick just before onTick; allows you to simulate the inputs changing
     ---@param simulator Simulator Use simulator:<function>() to set inputs etc.
@@ -52,207 +48,271 @@ end
 -- try require("Folder.Filename") to include code from another file in this, so you can store code in libraries
 -- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
 
-_colors = {
+local _colors = {
     { { 47, 51, 78 },  { 86, 67, 143 },  { 128, 95, 164 } }, --sencar 5 in the micro
     { { 17, 15, 107 }, { 22, 121, 196 }, { 48, 208, 217 } }, --blue
     { { 74, 27, 99 },  { 124, 42, 161 }, { 182, 29, 224 } }, --purple
     { { 35, 54, 41 },  { 29, 87, 36 },   { 12, 133, 26 } },  --green
-    { { 69, 1, 10 },   { 122, 0, 0 },    { 160, 9, 9 } },    --TE red
+    { { 69, 1, 10 },   { 122, 1, 1 },    { 160, 9, 9 } },    --TE red
     { { 38, 38, 38 },  { 92, 92, 92 },   { 140, 140, 140 } }, --grey
     { { 92, 50, 1 },   { 158, 92, 16 },  { 201, 119, 24 } }  --orange
 }
 
-scrollPixels = 0
-defaultTheme = property.getNumber("Theme")
-units = property.getBool("Units")
-def = property.getBool("Transmission")
-open = false
-maxscroll = 0
+local scrollable = 0
+local scrollPixels = 0
+local defaultTheme = property.getNumber("Theme")
+local open = false
+local maxScroll = 0
+local beforeRainbow = defaultTheme --which theme it was before setting rainbow mode
+local lastRainbowMode = false
 
---action {"name", state, type (0=toggle,1=dropdown,2=slider), isShow, extra}
-themes = {
+local themes = {
     "Default",
-    "blue",
+    "Blue",
     "purple",
     "green",
     "TE red",
     "Grey",
     "Orange"
 }
-actions = {
-    { "Metric",      false, 0 },
-    { "Manual",      false, 0 },
-    { "SenConnect",  true,  0 },
-    { "RGB Mode",    false, 0 },
-    { "Hue hue hue", 0,     2, { min = -180, max = 180, value = 0 } },
-    { "Theme",       0,     1, themes },
-}
 
-actions[1][2] = not units
-actions[2][2] = not def
-actions[5][2] = defaultTheme
-theme = _colors[defaultTheme]
+local actions = { --action {"name", state, type (0=toggle,1=dropdown,2=slider), isShow, extra}
+    { "Metric",       false,                                 0 },
+    { "Manual",       false,                                 0 },
+    { "ESC Off",      false,                                 0 },
+    { "RGB Mode",     false,                                 0 },
+    { "Mp Mode",      false,                                 0 },
+    { "Hue adjust",   0,                                     2, { n = -180, m = 180, v = 0, s = 1 } },
+    { "Gradient Res", 0,                                     2, { n = 1, m = 9, v = 6, s = 0.1 } },
+    { "Theme",        0,                                     1, themes },
+    { "Dark Mode",    false,                                 0 },
+    { "SenConnect",     property.getBool("Enable SenConnect"), 0 },
+    { "Auto sleep",     true,                                  0 },
+    { "Pwr Bias (F/R)", 0,                                     2, { n = -1, m = 1, v = 0, s = 0.02 } },
+    { "Max Power",      0,                                     2, { n = 0, m = 100, v = 100, s = 1 } },
+}
+local actionHeightOffsets = {}
+local total = 0
+
+local sleepTicks = 0
+local isSleeping = false
+
+for index, action in pairs(actions) do
+    local height = 0
+    if action[3] == 0 then
+        height = 11
+        total = total + height
+    elseif action[3] == 1 then
+        height = 11
+        total = total + height
+    elseif action[3] == 2 then
+        height = 19
+        total = total + height
+    end
+    actionHeightOffsets[index] = total
+end
+
+actions[1][2] = not property.getBool("Units")
+actions[2][2] = not property.getBool("Transmission")
+actions[6][2] = defaultTheme
+local theme = _colors[defaultTheme]
+
+local lastIsNight = false
 
 function onTick()
-    touchX = input.getNumber(1)
-    touchY = input.getNumber(2)
-
-    press = input.getBool(3) and press + 1 or 0
+    acc = input.getBool(1)
     app = input.getNumber(3)
 
-    if app == 5 then --die
-        if open then --adjust max scroll if dropdown is open
-            maxScroll = 155
+    touchX = input.getNumber(1)
+    touchY = input.getNumber(2)
+    press = input.getBool(3) and press + 1 or 0
+
+    local isNight = input.getBool(6)
+    if isNight ~= lastIsNight then
+        lastIsNight = isNight
+        if isNight then
+            actions[9][2] = true
         else
-            maxScroll = 100
-            if scrollPixels > maxScroll - 64 then
-                scrollPixels = maxScroll - 64
+            actions[9][2] = false
+        end
+    end
+
+    local lock = not input.getBool(4)
+
+    local enableSleep = actions[5][2]
+
+    -- sleep logic
+    if enableSleep then
+        if press > 0 then
+            sleepTicks = 0
+            isSleeping = false
+        else
+            sleepTicks = sleepTicks + 1
+            if sleepTicks > 600 then
+                isSleeping = true
             end
         end
+    else
+        sleepTicks = 0
+        isSleeping = false
+    end
+
+    if app == 5 and not isSleeping then --die
+        maxScroll = 204 -- ~~adjust max scroll if dropdown is open~~ no longer needed, const
+        scrollPixels = math.min(scrollPixels, maxScroll - 64)
+
         --scroll
-        if press > 0 and isPointInRectangle(touchX, touchY, 0, 18, 12, 19) then --up
-            scrollPixels = clamp(scrollPixels - 2, 0, 9999)                     --honestly, the max value is arbitrary
-            zoomin = true
-        else
-            zoomin = false
+        scrollUp = press > 0 and isPointInRectangle(0, 18, 12, 19)
+        scrollDown = press > 0 and isPointInRectangle(0, 39, 12, 19)
+        if scrollUp then
+            scrollPixels = clamp(scrollPixels - 2, 0, 999)
         end
-        if press > 0 and isPointInRectangle(touchX, touchY, 0, 39, 12, 19) then --down
-            if maxScroll - scrollPixels > 64 then
-                scrollPixels = scrollPixels + 2
-            end
-            zoomout = true
-        else
-            zoomout = false
+        if scrollDown then
+            scrollPixels = scrollPixels + 2
         end
 
         --action inputs
-        for i, action in pairs(actions) do
-            if action[3] == 0 then --toggle
-                if press == 2 and isPointInRectangle(touchX, touchY, 15, 15 - scrollPixels + i * 11, 80, 8) then
+        if not lock then
+            for i, action in pairs(actions) do
+                scrollable = 15 - scrollPixels + actionHeightOffsets[i]
+                local toggleScrollable = 15 - scrollPixels + actionHeightOffsets[i]
+                if action[3] == 0 and scrollable < 15 then
+                    goto continue -- do nothing, out of view
+                end
+
+                if action[3] == 0 and press == 1 and not open and isPointInRectangle(14, toggleScrollable, 80, 8) then --toggle
                     action[2] = not action[2]
-                end
-            elseif action[3] == 1 then --dropdown
-                if press == 2 and isPointInRectangle(touchX, touchY, 15, 23 - scrollPixels + i * 11, 80, 8) then
-                    open = not open
-                end
-                --select themes
-                for j = 1, #action[4] do
-                    if press == 2 and open and isPointInRectangle(touchX, touchY, 15, 23 - scrollPixels + i * 11 + #themes * j + j, 80, 8) then
-                        theme = _colors[j]
+                elseif action[3] == 1 and press == 2 then                                                 --dropdown
+                    if isPointInRectangle(14, scrollable, 80, 8) then
                         open = not open
                     end
+
+                    --select themes
+                    for j = 1, #themes do
+                        if open and isPointInRectangle(14, scrollable + #themes * j + j, 80, 8) then
+                            theme = _colors[j]
+                            beforeRainbow = j
+                            actions[6][4].v = 0
+                            open = false
+                        end
+                    end
+                elseif action[3] == 2 and press > 1 and not open then --slider
+                    --down
+                    if isPointInRectangle(14, scrollable, 8, 8) then
+                        action[4].v = clamp(action[4].v - action[4].s, action[4].n, action[4].m)
+                    end
+                    --up
+                    if isPointInRectangle(77, scrollable, 8, 8) then
+                        action[4].v = clamp(action[4].v + action[4].s, action[4].n, action[4].m)
+                    end
                 end
-            elseif action[3] == 2 then --slider
-                -- down
-                if press > 1 and isPointInRectangle(touchX, touchY, 15, 23 - scrollPixels + i * 11, 8, 8) then
-                    action[4].value = clamp(action[4].value - 1, action[4].min, action[4].max)
-                end
-                --up
-                if press > 1 and isPointInRectangle(touchX, touchY, 78, 23 - scrollPixels + i * 11, 8, 8) then
-                    action[4].value = clamp(action[4].value + 1, action[4].min, action[4].max)
-                end
+                ::continue::
             end
         end
     end
 
     --theme adjustments
     tempTheme = rgbToHsv(theme)
-    if actions[4][2] then --rgb mode
+    hsvTheme = rgbToHsv(_colors[beforeRainbow])
+
+    if actions[4][2] then --RGB mode
+        lastRainbowMode = true
         for _, set in pairs(tempTheme) do
-            set[1] = set[1] + 0.003
-            if set[1] > 1 then
-                set[1] = 0
-            end
+            set[1] = (set[1] + 0.003) % 1
         end
     else
-        for _, set in pairs(tempTheme) do
-            set[1] = set[1] + actions[5][4].value/1800
-            if set[1] > 1 then
-                set[1] = 0
-            end
-            if set[1] < 0 then
-                set[1] = 1
-            end
+        if lastRainbowMode then
+            lastRainbowMode = false
+            tempTheme = hsvTheme
+        end
+        for i, set in ipairs(hsvTheme) do
+            set[1] = (set[1] + actions[6][4].v / 1200) % 1
+            tempTheme[i] = set
         end
     end
+
     theme = hsvToRgb(tempTheme)
 
     --output
-    --[[for i = 1, #actions do
+    for i = 1, 5 do
         output.setBool(i, not actions[i][2])
-    end]]
-end
+    end
+    output.setBool(6, actions[9][2])
+    output.setBool(7, actions[10][2])
+    output.setBool(8, actions[11][2])
 
-function onDraw()
-    local _ = theme
-    if app == 5 then
-        --[[* MAIN OVERLAY *]] --
-        c(70, 70, 70)
-        screen.drawRectF(0, 0, 96, 64)
-
-        hcolor = { _[2][1] + 25, _[2][2] + 25, _[2][3] + 25 }
-        rcolor = { _[3][1], _[3][2], _[3][3] }
-        tcolor = { _[1][1], _[1][2], _[1][3] }
-        c(table.unpack(hcolor))
-        screen.drawText(15, 16 - scrollPixels, "OS options")
-        c(100, 100, 100)
-        screen.drawLine(15, 23 - scrollPixels, 80, 23 - scrollPixels)
-
-        --draw each action
-        --[[for i=1, #actions do
-            drawFullToggle(15, 15-scrollPixels+i*11, actions[i][2], actions[i][1], rcolor, tcolor)
+    output.setNumber(1, math.floor(9 - actions[7][4].v))
+    output.setNumber(2, actions[12][4].v)
+    output.setNumber(3, actions[13][4].v / 100)
+    channel = 24
+    for i = 1, 3 do
+        for j = 1, 3 do
+            output.setNumber(channel, theme[i][j])
+            channel = channel + 1
         end
-        if not actions[4][2] then
-            drawDropdown(15, 26-scrollPixels+#actions*11, open, "Theme \\/", themes, theme, rcolor, tcolor)
-        end]]
-        for i, action in pairs(actions) do
-            if action[3] == 0 then     --toggle
-                drawFullToggle(15, 15 - scrollPixels + i * 11, action[2], action[1], rcolor, tcolor)
-            elseif action[3] == 1 then --dropdown
-                drawDropdown(15, 23 - scrollPixels + i * 11, open, action[1], action[4], theme, rcolor, tcolor)
-            elseif action[3] == 2 then --slider
-                drawSlider(15, 15 - scrollPixels + i * 11, action[1], action[4].value, action[4].min, action[4].max,
-                    rcolor, tcolor)
-            end
-        end
-
-        --[[* CONTROLS OVERLAY *]] --
-        c(_[1][1], _[1][2], _[1][3], 250)
-        screen.drawRectF(0, 15, 13, 64)
-
-        if zoomin then c(150, 150, 150) else c(170, 170, 170) end
-        drawRoundedRect(1, 19, 10, 18)
-        if zoomout then c(150, 150, 150) else c(170, 170, 170) end
-        drawRoundedRect(1, 40, 10, 18)
-        c(100, 100, 100)
-        screen.drawTriangleF(3, 29, 6, 25, 10, 29)
-        screen.drawTriangleF(2, 48, 6, 53, 11, 48)
     end
 end
 
-function c(...)
-    local _ = { ... }
+function onDraw()
+    if not acc or app ~= 5 or isSleeping then return end
+    --[[* MAIN OVERLAY *]] --
+    c(70, 70, 70)
+    screen.drawRectF(0, 0, 96, 64)
+
+    local hcolor = { theme[2][1] + 25, theme[2][2] + 25, theme[2][3] + 25 }
+    c(table.unpack(hcolor))
+    screen.drawText(15, 16 - scrollPixels, "Settings")
+    c(100, 100, 100)
+    scrollable = 23 - scrollPixels
+    screen.drawLine(15, scrollable, 80, scrollable)
+
+    -- first pass: draw all non-dropdown elements and closed dropdowns
+    for i, action in pairs(actions) do
+        scrollable = 15 - scrollPixels + actionHeightOffsets[i]
+        if action[3] == 0 then     --toggle
+            drawFullToggle(15, scrollable, action[2], action[1], theme[3], theme[1])
+        elseif action[3] == 1 and not open then --dropdown (closed only)
+            drawDropdown(15, scrollable, false, action[1], action[4], theme, theme[3], theme[1])
+        elseif action[3] == 2 then --slider
+            drawSlider(15, scrollable - 8, action[1], action[4].v, action[4].n, action[4].m, theme[3], theme[1])
+        end
+    end
+
+    -- second pass: draw open dropdowns on top
+    for i, action in pairs(actions) do
+        if action[3] == 1 and open then --dropdown (open only)
+            scrollable = 15 - scrollPixels + actionHeightOffsets[i]
+            drawDropdown(15, scrollable, true, action[1], action[4], theme, theme[3], theme[1])
+        end
+    end
+
+    --[[* CONTROLS OVERLAY *]] --
+    c(theme[1][1], theme[1][2], theme[1][3], 250)
+    screen.drawRectF(0, 15, 13, 64)
+
+    if scrollUp then c(150, 150, 150) else c(170, 170, 170) end
+    drawRoundedRect(1, 19, 10, 18)
+    if scrollDown then c(150, 150, 150) else c(170, 170, 170) end
+    drawRoundedRect(1, 40, 10, 18)
+    c(100, 100, 100)
+    screen.drawTriangleF(3, 29, 6, 25, 10, 29)
+    screen.drawTriangleF(2, 48, 6, 53, 11, 48)
+end
+
+function c(...) 
+    _ = {...} 
     for i, v in pairs(_) do
-        _[i] = _[i] ^ 2.2 / 255 ^ 2.2 * _[i]
+        _[i] = v ^ 2.2 / 255 ^ 2.2 * v
     end
     screen.setColor(table.unpack(_))
 end
 
-function clamp(value, lower, upper)
-    return math.min(math.max(value, lower), upper)
+function clamp(v, l, u)
+    return math.min(math.max(v, l), u)
 end
 
-function isPointInRectangle(x, y, rectX, rectY, rectW, rectH)
-    return x > rectX and y > rectY and x < rectX + rectW and y < rectY + rectH
-end
-
-function drawInfo(x, y, header, text, hcolor, rcolor, tcolor) --function to draw some info with a header and a rounded rect
-    c(table.unpack(hcolor))
-    screen.drawText(x, y, header)
-    c(table.unpack(rcolor))
-    drawRoundedRect(x, y + 6, #text * 5 + 2, 8)
-    c(table.unpack(tcolor))
-    screen.drawText(x + 2, y + 8, text)
+function isPointInRectangle(rx, ry, rw, rh)
+    return touchX > rx and touchY > ry and touchX < rx + rw and touchY < ry + rh
 end
 
 function drawRoundedRect(x, y, w, h)
@@ -292,45 +352,41 @@ function drawFullToggle(x, y, state, text, bgcolor, tcolor)
 end
 
 function drawDropdown(x, y, open, title, content, current, bgcolor, tcolor)
+    width = #title * 5 + 20
     c(table.unpack(bgcolor))
-    if not open then
-        drawRoundedRect(x, y, #title * 5 + 20, 8)
-        c(table.unpack(tcolor))
-        screen.drawText(x + 9, y + 2, title)
-        screen.drawText(x + 2, y + 2, "+")
-        screen.drawLine(x + 7, y, x + 7, y + 9)
-    else
-        drawRoundedRect(x, y, #title * 5 + 20, #content * 9)
-        c(table.unpack(tcolor))
-        screen.drawLine(x, y + 8, x + #title * 5 + 21, y + 8)
-        screen.drawText(x + 9, y + 2, title)
-        screen.drawText(x + 2, y + 2, "-")
-        screen.drawLine(x + 7, y, x + 7, y + 9)
+    drawRoundedRect(x, y, width, open and #content * 9 or 8)
 
+    c(table.unpack(tcolor))
+    screen.drawText(x + 9, y + 2, title)
+    screen.drawText(x + 2, y + 2, open and "-" or "+")
+    screen.drawLine(x + 7, y, x + 7, y + 9)
+
+    if open then
+        screen.drawLine(x, y + 8, x + width + 1, y + 8)
         for i = 1, #content do
-            c(table.unpack(tcolor))
             screen.drawText(x + 2, y + 2 + i * 8, content[i])
             if current == i then
                 c(50, 50, 50, 200)
-                screen.drawRectF(x, y + 1 + i * 8, #title * 5 + 21, 7)
+                screen.drawRectF(x, y + 1 + i * 8, width + 1, 7)
             end
         end
     end
 end
 
 function drawSlider(x, y, title, value, min, max, bgcolor, tcolor)
+    map = 10 + ((value - min) * ((60 - 10) / (max - min)))
     c(table.unpack(bgcolor))
     drawRoundedRect(x, y, 70, 16)
+
     c(table.unpack(tcolor))
     screen.drawText(x + 2, y + 2, title)
     screen.drawText(x + 2, y + 10, "-")
     screen.drawText(x + 65, y + 10, "+")
     screen.drawLine(x + 7, y + 9, x + 7, y + 16)
     screen.drawLine(x + 62, y + 9, x + 62, y + 16)
-
     screen.drawLine(x + 10, y + 12, x + 60, y + 12)
+
     c(100, 200, 100)
-    map = 10 + ((value - min) * ((60 - 10) / (max - min)))
     screen.drawLine(x + 10, y + 12, x + map, y + 12)
 end
 
@@ -338,91 +394,28 @@ function rgbToHsv(theme) --GUESS what this does
     converted = {}
     for _, set in pairs(theme) do
         r, g, b = set[1] / 255, set[2] / 255, set[3] / 255
-        max, min = math.max(r, g, b), math.min(r, g, b)
-        h, s, v = 0, 0, 0
-        v = max
-
-        d = max - min
-        if max == 0 then s = 0 else s = d / max end
-
-        if max == min then
-            h = 0 -- achromatic
-        else
-            if max == r then
-                h = (g - b) / d
-                if g < b then h = h + 6 end
-            elseif max == g then
-                h = (b - r) / d + 2
-            elseif max == b then
-                h = (r - g) / d + 4
-            end
+        max, min, d = math.max(r, g, b), math.min(r, g, b), math.max(r, g, b) - math.min(r, g, b)
+        h, s, v = 0, (max == 0 and 0 or d / max), max
+        if max ~= min then
+            h = (max == r and (g - b) / d + (g < b and 6 or 0)) or (max == g and (b - r) / d + 2) or (max == b and (r - g) / d + 4)
             h = h / 6
         end
-        converted[#converted+1] = {h,s,v}
+        converted[#converted+1] = {h, s, v}
     end
-
     return converted
 end
 
-function hsvToRgb(theme) --modified, original function not mine
+function hsvToRgb(theme)
     converted = {}
-    for _,set in pairs(theme) do
-        h,s,v = set[1], set[2], set[3]
-        r, g, b = 0, 0, 0
-
-        i = math.floor(h * 6);
-        f = h * 6 - i;
-        p = v * (1 - s);
-        q = v * (1 - f * s);
-        t = v * (1 - (1 - f) * s);
-
+    for _, set in pairs(theme) do
+        h, s, v = set[1], set[2], set[3]
+        i, f = math.floor(h * 6), h * 6 - math.floor(h * 6)
+        p, q, t = v * (1 - s), v * (1 - f * s), v * (1 - (1 - f) * s)
         i = i % 6
-
-        if i == 0 then
-            r, g, b = v, t, p
-        elseif i == 1 then
-            r, g, b = q, v, p
-        elseif i == 2 then
-            r, g, b = p, v, t
-        elseif i == 3 then
-            r, g, b = p, q, v
-        elseif i == 4 then
-            r, g, b = t, p, v
-        elseif i == 5 then
-            r, g, b = v, p, q
-        end
-        converted[#converted+1] = {r*255,g*255,b*255}
+        r, g, b = (i == 0 and v or i == 1 and q or i == 2 and p or i == 3 and p or i == 4 and t or v),
+                  (i == 0 and t or i == 1 and v or i == 2 and v or i == 3 and q or i == 4 and p or p),
+                  (i == 0 and p or i == 1 and p or i == 2 and t or i == 3 and v or i == 4 and v or q)
+        converted[#converted+1] = {r*255, g*255, b*255}
     end
-
     return converted
 end
-
---dst(x,y,text,size=1,rotation=1,is_monospace=false)
---rotation can be between 1 and 4
---[[f=screen.drawRectF
-g=property.getText
---magic willy font
-h=g("FONT1")..g("FONT2")
-i={}j=0
-for k in h:gmatch("....")do i[j+1]=tonumber(k,16)j=j+1 end
-function dst(l,m,n,b,o,p)b=b or 1
-o=o or 1
-if o>2 then n=n:reverse()end
-n=n:upper()for q in n:gmatch(".")do
-r=q:byte()-31 if 0<r and r<=j then
-for s=1,15 do
-if o>2 then t=2^s else t=2^(16-s)end
-if i[r]&t==t then
-u,v=((s-1)%3)*b,((s-1)//3)*b
-if o%2==1 then f(l+u,m+v,b,b)else f(l+5-v,m+u,b,b)end
-end
-end
-if i[r]&1==1 and not p then
-s=2*b
-else
-s=4*b
-end
-if o%2==1 then l=l+s else m=m+s end
-end
-end
-end]]

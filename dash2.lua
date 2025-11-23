@@ -1,4 +1,4 @@
---dash
+--dash2
 --- Developed using LifeBoatAPI - Stormworks Lua plugin for VSCode - https://code.visualstudio.com/download (search "Stormworks Lua with LifeboatAPI" extension)
 --- If you have any issues, please report them here: https://github.com/nameouschangey/STORMWORKS_VSCodeExtension/issues - by Nameous Changey
 
@@ -22,13 +22,13 @@ do
     simulator:setProperty("Temp Warn", 70)
     simulator:setProperty("Upshift RPS", 17) --read up more on what causes automatics to shift
     simulator:setProperty("Downshift RPS", 11)
-    simulator:setProperty("Transmission", true) --true for automatic
+    simulator:setProperty("Transmission Default", true) --true for automatic
     simulator:setProperty("Units", true) --true for imperial
     simulator:setProperty("Theme", 3) --we dont have the "Use Drive Modes" property because that is handled by the transmission
     simulator:setProperty("Car name", "SenCar 5 DEV")
     simulator:setProperty("Top Speed (m/s)", 66)
     simulator:setProperty("EV Mode (Do not change)", true)
-    simulator:setProperty("Dash Layout", 1) -- 1 - SenCar 6, 2 - SenCar 5, 3 - Round, 4 - Modern
+    simulator:setProperty("Dash Layout", 4) -- 1 - SenCar 6, 2 - SenCar 5, 3 - Round, 4 - Modern
 
     -- Runs every tick just before onTick; allows you to simulate the inputs changing
     ---@param simulator Simulator Use simulator:<function>() to set inputs etc.
@@ -47,6 +47,7 @@ do
         simulator:setInputBool(1, true)
         simulator:setInputBool(2, false)
         simulator:setInputBool(3, true)
+        simulator:setInputBool(31, true)
         simulator:setInputBool(32, true)
 
         local screenConnection = simulator:getTouchScreen(1)
@@ -56,9 +57,10 @@ do
         simulator:setInputNumber(4, simulator:getSlider(4))
         simulator:setInputNumber(5, simulator:getSlider(5)*120)
         simulator:setInputNumber(8, simulator:getSlider(8))
-        simulator:setInputNumber(9, simulator:getSlider(9))
+        simulator:setInputNumber(9, math.floor(simulator:getSlider(9)*4))
         simulator:setInputNumber(10, screenConnection.touchX)
         simulator:setInputNumber(11, screenConnection.touchY)
+        simulator:setInputNumber(13, (ticks % 1800) / 1800) -- clock cycles every 30 seconds
     end;
 end
 ---@endsection
@@ -73,11 +75,16 @@ local theme = { { 47, 51, 78 }, { 86, 67, 143 }, { 128, 95, 164 } }
 local info = {properties = {}}
 local fuelCollected = false
 local ticks = 0
-local mapZoom = 2
+local tickDir = 1
 
 local pi = math.pi
 local pi2 = pi*2
-local oneDeg = pi/180
+local oneDeg = pi / 180
+local compIndicatorOffset = 0
+
+local deg = 0
+local degStr = ""
+local oldDeg = 0
 
 local lastClock = 0
 local clockstr = ""
@@ -86,12 +93,10 @@ info.properties.fuelwarn = property.getNumber("Fuel Warn %")/100
 info.properties.tempwarn = property.getNumber("Temp Warn")
 info.properties.upshift = property.getNumber("Upshift RPS")
 info.properties.downshift = property.getNumber("Downshift RPS")
-info.properties.topspeed = property.getNumber("Top Speed (m/s)")/100
+info.properties.topspeed = property.getNumber("Top Speed (m/s)")
 info.properties.ev = property.getBool("EV Mode (Do not change)")
 info.properties.trans = property.getBool("Transmission")
 info.properties.unit = property.getBool("Units")
-
-local usingSenconnect = property.getBool("Enable SenConnect") --disables map rendering, in favor of SenConnect's map
 
 local dashMode = property.getNumber("Dash Layout")
 
@@ -101,26 +106,7 @@ function onTick()
     info.properties.unit = input.getBool(32)
     info.properties.trans = input.getBool(31) --peculiar property name
 
-    touchX = input.getNumber(10)
-    touchY = input.getNumber(11)
-    local touch = input.getBool(2)
-
-    
-    local clock = input.getNumber(13)
-
-    if clock ~= lastClock then
-        lastClock = clock
-        if input.getBool(32) then
-            clockstr = ("%02d"):format(math.floor(clock * 24) % 12) .. ":" .. ("%02d"):format(math.floor((clock * 1440) % 60))
-            if string.sub(clockstr, 1, 2) == "00" then
-                clockstr = "12" .. string.sub(clockstr, 3, -1)
-            end
-        else
-            clockstr = ("%02d"):format(math.floor(clock * 24)) .. ":" .. ("%02d"):format(math.floor((clock * 1440) % 60))
-        end
-    end
-
-    if dashMode > 2 then return end
+    if dashMode < 3 then return end
     --kill me
     info.speed = input.getNumber(1)
     info.gear = input.getNumber(2) -- p, r, n, (1, 2, 3, 4, 5)
@@ -133,62 +119,65 @@ function onTick()
     info.drivemode = input.getNumber(9)
 
     useDimDisplay = input.getBool(6)
-        
-    if not fuelCollected then
-        ticks = ticks + 1
+
+    local clock = input.getNumber(13)
+
+    if clock ~= lastClock then
+        lastClock = clock
+        if input.getBool(32) then
+            clockstr = ("%02d"):format(math.floor(clock * 24) % 12) .. ("%02d"):format(math.floor((clock * 1440) % 60))
+            if string.sub(clockstr, 1, 2) == "00" then
+                clockstr = "12" .. string.sub(clockstr, 3, -1)
+            end
+        else
+            clockstr = ("%2d"):format(math.floor(clock * 24)) .. ("%02d"):format(math.floor((clock * 1440) % 60))
+        end
     end
-    if ticks <= 20 then
+
+    if not fuelCollected or exist then
+        ticks = ticks + tickDir
+    end
+    if not fuelCollected and ticks <= 20 then
         info.properties.maxfuel = input.getNumber(4) or 180
         fuelCollected = true
-        ticks = 0
     end
 
-    --map zoom
-    if dashMode == 1 then
-        if touch and isPointInRectangle(26, 22, 5, 5) then
-            mapZoom = math.min(mapZoom + 0.1, 5)
-        elseif touch and isPointInRectangle(65, 22, 5, 5) then
-            mapZoom = math.max(mapZoom - 0.1, 0.5)
-        end
-    elseif dashMode == 2 then
-        if touch and isPointInRectangle(23, 26, 5, 5) then
-            mapZoom = math.min(mapZoom + 0.1, 5)
-        elseif touch and isPointInRectangle(67, 26, 5, 5) then
-            mapZoom = math.max(mapZoom - 0.1, 0.5)
-        end
+    if ticks > 720 then -- 12 seconds
+        tickDir = -1
+    elseif ticks < 0 then
+        tickDir = 1
     end
 
-    mapZoom = mapZoom + (info.speed / info.properties.topspeed) * 0.1
-    
     -- load from inputs
     for i = 1, 9 do
-        local row = math.ceil(i/3)
-        local col = (i-1)%3+1
-        local value = input.getNumber(i+23)
+        local row = math.ceil(i / 3)
+        local col = (i - 1) % 3 + 1
+        local value = input.getNumber(i + 23)
         if value ~= 0 then
             if not theme[row] then theme[row] = {} end
             theme[row][col] = value
         end
     end
+
+    deg = math.floor(math.deg(info.compass) % 360)
+    degStr = string.format("%.0f", (360 - deg) % 360)
+
+    if oldDeg ~= deg then
+        compIndicatorOffset = compIndicatorOffset == 1 and 0 or 1
+    end
+
+    oldDeg = deg
 end
 
 function onDraw()
     if exist then
         -- Heavily abusing LifeBoatAPI's ability to paste code from other files by require
         -- The two dash files literally get pasted into this function
-        if dashMode == 1 then
-            require("dashes.car6")
-        elseif dashMode == 2 then
-            require("dashes.car5")
+        if dashMode == 3 then
+            require("dashes.round")
+        elseif dashMode == 4 then
+            require("dashes.modern")
         end
-    elseif not acc then
-        c(100, 100, 100)
-        dst(40, 10, clockstr)
-        c(80, 80, 80)
-        if info.properties.ev then
-            dst(28, 20, "Tap to start")
-        end
-        dst(2, 2, "ST")
     end
 end
 
@@ -278,4 +267,8 @@ end
 function easeLerp(v0, v1, t)
     local ease = t <= 0.5 and 2 * t * t or -1 + (4 - 2 * t) * t
     return v0 + (v1 - v0) * ease
+end
+
+function lerp(v0,v1,t)
+  return v0+t*(v1-v0)
 end
