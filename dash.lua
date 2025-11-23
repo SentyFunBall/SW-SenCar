@@ -22,7 +22,7 @@ do
     simulator:setProperty("Temp Warn", 70)
     simulator:setProperty("Upshift RPS", 17) --read up more on what causes automatics to shift
     simulator:setProperty("Downshift RPS", 11)
-    simulator:setProperty("Transmission Default", true) --true for automatic
+    simulator:setProperty("Transmission", true) --true for automatic
     simulator:setProperty("Units", true) --true for imperial
     simulator:setProperty("Theme", 3) --we dont have the "Use Drive Modes" property because that is handled by the transmission
     simulator:setProperty("Car name", "SenCar 5 DEV")
