@@ -22,7 +22,7 @@ do
     simulator:setProperty("Temp Warn", 70)
     simulator:setProperty("Upshift RPS", 17) --read up more on what causes automatics to shift
     simulator:setProperty("Downshift RPS", 11)
-    simulator:setProperty("Transmission Default", true) --true for automatic
+    simulator:setProperty("Transmission", true) --true for automatic
     simulator:setProperty("Units", true) --true for imperial
     simulator:setProperty("Theme", 3) --we dont have the "Use Drive Modes" property because that is handled by the transmission
     simulator:setProperty("Car name", "SenCar 5 DEV")
@@ -65,7 +65,6 @@ end
 
 -- try require("Folder.Filename") to include code from another file in this, so you can store code in libraries
 -- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
-require("LifeBoatAPI")
 
 _colors = {
     {{47,51,78}, {86,67,143}, {128,95,164}}, --sencar 5 in the micro
@@ -82,12 +81,24 @@ fuelCollected = false
 remdeg = 130
 ticks = 0
 
+gears = {"P", "R", "N", "D"}
+
+for i = #gears, 2, -1 do
+    local j = math.random(i)
+    gears[i], gears[j] = gears[j], gears[i]
+end
+
+passcode = math.random(1000, 9999)
+unlock = false
+passcodeAttempts = 0
+
 info.properties.fuelwarn = property.getNumber("Fuel Warn %")/100
 info.properties.tempwarn = property.getNumber("Temp Warn")
---info.properties.upshift = property.getNumber("Upshift RPS")
 info.properties.downshift = property.getNumber("Downshift RPS")
 info.properties.useDriveModes = property.getBool("Use Drive Modes")
 info.properties.topspeed = property.getNumber("Top Speed (m/s)")/100
+info.properties.governor = property.getNumber("Governor Speed (m/s)")/100
+info.properties.maxfuel = 0
 
 function onTick()
     acc = input.getBool(1)
@@ -113,6 +124,19 @@ function onTick()
     info.compass = input.getNumber(8)*(math.pi*2)
     info.drivemode = input.getNumber(9)
     info.properties.upshift = property.getNumber("Upshift RPS")
+    info.passcodeAttempt = input.getNumber(10)
+
+    if info.passcodeAttempt ~= oldPasscodeAttempt then
+        if info.passcodeAttempt == passcode then
+            unlock = true
+        else
+            passcodeAttempts = passcodeAttempts + 1
+        end
+    end
+
+    if passcodeAttempts == 3 then --trigger alarm
+        output.setBool(1, true)
+    end
 
     if not fuelCollected then
         ticks = ticks + 1
@@ -122,10 +146,26 @@ function onTick()
         fuelCollected = true
         ticks = 0
     end
+
+    --other warnings
+    if info.fuel/info.properties.maxfuel < info.properties.fuelwarn then
+        output.setBool(2, true)
+    end
+
+    if info.temp > info.properties.tempwarn then
+        output.setBool(3, true)
+    end
+
+    if info.speed > info.properties.governor then
+        output.setBool(4, true)
+    end
+
+
+    oldPasscodeAttempt = info.passcodeAttempt
 end
 
 function onDraw()
-    if acc then
+    if acc and unlock then
         local _ = _colors[info.properties.theme]
 
         if ((not usingSenconnect) and info.gear ~= 1) then --dont draw map if were in reverse or if SC is connected (haha magic boolean)
@@ -144,8 +184,8 @@ function onDraw()
         
         -- circles
         c(_[1][1], _[1][2], _[1][3],250) --i love tables
-        drawCircle(16, 16, 12, 0, 21, 0, math.pi*2)
-        drawCircle(80, 16, 12, 0, 21, 0, math.pi*2)
+        screen.drawCircleF(16, 16, 12)
+        screen.drawCircleF(80, 16, 12)
 
         -- empter dials
         c(_[1][1]-15, _[1][2]-15, _[1][3]-15)
@@ -209,7 +249,7 @@ function onDraw()
         dl(0,5,info.battery*9,5)]]
 
         -- dial that fills up
-        c(_[2][1], _[2][2], _[2][3])
+        if info.speed>info.properties.governor then c(180, 53, 35) else c(_[2][1], _[2][2], _[2][3]) end
         drawCircle(16, 16, 10, 8, 60, -remdeg/2*math.pi/180, math.min(info.speed/100/info.properties.topspeed, 1)*(360-remdeg)*math.pi/180) --speed
         if info.rps>info.properties.upshift then c(180, 53, 35) else c(_[2][1], _[2][2], _[2][3]) end
         drawCircle(80, 16, 10, 8, 60, -remdeg/2*math.pi/180, math.min(info.rps/(info.properties.upshift+5), 1)*(360-remdeg)*math.pi/180) --rps
@@ -255,14 +295,14 @@ function onDraw()
         
         -- gear
         if info.gear == 0 then
-            dst(78,9,"P",2)
+            dst(78,9,gears[1],2)
         elseif info.gear == 1 then
-            dst(78,9,"R",2)
+            dst(78,9,gears[2],2)
         elseif info.gear == 2 then
-            dst(78,9,"N",2)
+            dst(78,9,gears[3],2)
         elseif info.gear >= 3 then
             if info.properties.trans then --auto
-                dst(77,9,"D",2)
+                dst(77,9,gears[4],2)
                 dst(84,13,string.format("%.0f", info.gear-2))
             else
                 dst(78,9,string.format("%.0f", info.gear-2),2)

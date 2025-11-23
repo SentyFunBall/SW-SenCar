@@ -50,10 +50,9 @@ end
 
 -- try require("Folder.Filename") to include code from another file in this, so you can store code in libraries
 -- the "LifeBoatAPI" is included by default in /_build/libs/ - you can use require("LifeBoatAPI") to get this, and use all the LifeBoatAPI.<functions>!
-require("LifeBoatAPI")
 
-SENCAR_VERSION = "5.0.3"
-SENCAR_VERSION_BUILD = "0103230306r"
+SENCAR_VERSION = "6.0.dev"
+SENCAR_VERSION_BUILD = "1018242045e"
 APP_VERSIONS = {MAP = "1029221958r", INFO = "1029222319r", WEATHER = "1102222312r", CAR = "1104222327r", SETTINGS = "1105221246r"}
 
 _colors = {

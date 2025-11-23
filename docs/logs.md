@@ -1,8 +1,8 @@
-# SenCar 5 Change Logs
+# SenCar Change Logs
 
   
 
-SenCar 5 has undergone a lot of changes. These are all of the updates to SenCar 5 after the public release with Solstice RT
+SenCar has undergone a lot of changes. These are all of the updates to SenCar 5 after the public release with Solstice RT
 
   
 
@@ -14,6 +14,7 @@ SenCar 5 has undergone a lot of changes. These are all of the updates to SenCar 
 
 2. [v5.0.2](#v5.0.2)
 
+3. [v6.0](#v6.0)
   
 
 ## v5.0
@@ -36,3 +37,7 @@ JAN 4, 2023
 MAR 20, 2023
 **Lua:**
 - Fix - Doors open display wouldn't update theme when manually changed
+
+## v6.0
+Soon
+The full release notes for SenCar 6 can be found [here](./car6logfull.md)
