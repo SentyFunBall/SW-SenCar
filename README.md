@@ -74,6 +74,16 @@ Tow mode, and the complimentary Towed mode, allows you to control something, or 
 
 ## List of Cars
 Here is a list of every released car with SenCar 6
+ - [Aita](https://steamcommunity.com/sharedfiles/filedetails/?id=3611288035)
+
+### And every vehicle with SenCar 5
+ - [Peregrine](https://steamcommunity.com/sharedfiles/filedetails/?id=3499419335)
+ - [SenKei](https://steamcommunity.com/sharedfiles/filedetails/?id=3403608936)
+ - [SenKei EV](https://steamcommunity.com/sharedfiles/filedetails/?id=3403609112)
+ - [Echolodia 2023 TE](https://steamcommunity.com/sharedfiles/filedetails/?id=3080222381)
+ - [Echolodia 2023](https://steamcommunity.com/sharedfiles/filedetails/?id=2992734276)
+ - [Descheeto](https://steamcommunity.com/sharedfiles/filedetails/?id=2949961654)
+ - [Moraine 2023](https://steamcommunity.com/sharedfiles/filedetails/?id=2937016479)
  - [Solstice 2022 RT](https://steamcommunity.com/sharedfiles/filedetails/?id=2905895118)
 
 ## For Developers
